@@ -68,6 +68,16 @@ if (fs.existsSync(distPath)) {
   });
 }
 
+// Global Express Error Handler
+app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+  console.error('[Express Global Error]:', err);
+  if (!res.headersSent) {
+    res.status(err.status || 500).json({
+      error: err.message || 'Internal Server Error'
+    });
+  }
+});
+
 if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`====================================================`);

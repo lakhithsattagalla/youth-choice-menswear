@@ -1,7 +1,15 @@
 import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
-import initialDbData from '../youth_choice_db.json';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+let bundledDbData: any = null;
+try {
+  bundledDbData = require('../youth_choice_db.json');
+} catch (e) {
+  console.warn('Could not load bundled JSON via require fallback:', e);
+}
 
 const DB_FILE = path.resolve(process.cwd(), 'youth_choice_db.json');
 
@@ -280,8 +288,8 @@ export function loadDatabase() {
   }
 
   if (!loaded) {
-    if (initialDbData && Array.isArray((initialDbData as any).users)) {
-      dbData = JSON.parse(JSON.stringify(initialDbData));
+    if (bundledDbData && Array.isArray(bundledDbData.users)) {
+      dbData = JSON.parse(JSON.stringify(bundledDbData));
       console.log('Database loaded successfully from bundled JSON.');
       loaded = true;
     } else {

@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
+import initialDbData from '../youth_choice_db.json';
 
 const DB_FILE = path.resolve(process.cwd(), 'youth_choice_db.json');
 
@@ -279,7 +280,13 @@ export function loadDatabase() {
   }
 
   if (!loaded) {
-    seedDatabase();
+    if (initialDbData && Array.isArray((initialDbData as any).users)) {
+      dbData = JSON.parse(JSON.stringify(initialDbData));
+      console.log('Database loaded successfully from bundled JSON.');
+      loaded = true;
+    } else {
+      seedDatabase();
+    }
   }
 
   // Ensure Admin User ALWAYS exists in database

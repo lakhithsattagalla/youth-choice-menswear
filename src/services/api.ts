@@ -38,7 +38,7 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}) {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    const errorMsg = data.error || data.message || data.details || "We couldn't send the OTP right now. Please try again later.";
+    const errorMsg = data.error || data.message || data.details || "Request failed. Please try again later.";
     throw new Error(errorMsg);
   }
 

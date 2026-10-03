@@ -130,11 +130,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setInfoMessage(res.message || 'OTP sent to your registered mobile number and email address.');
         return true;
       } else {
-        setError(res.message || "We couldn't send the OTP right now. Please try again later.");
+        setError(res.message || "Request failed. Please try again later.");
         return false;
       }
     } catch (err: any) {
-      setError(err.message || "We couldn't send the OTP right now. Please try again later.");
+      setError(err.message || "Request failed. Please try again later.");
       return false;
     } finally {
       setIsLoading(false);

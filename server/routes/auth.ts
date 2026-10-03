@@ -160,7 +160,7 @@ router.post('/send-otp', async (req: AuthRequest, res: Response) => {
         console.error(`[OTP Delivery Failed] Email (${deliveryResult.sentEmail ? 'OK' : 'FAILED'}) or SMS (${deliveryResult.sentSms ? 'OK' : 'FAILED'}) delivery failed for ${cleanEmail}. Check provider credentials in .env.`);
         return res.status(400).json({
           success: false,
-          error: "We couldn't send the OTP right now. Please try again later."
+          error: "Unable to process authentication request right now. Please try again later."
         });
       }
 
@@ -464,7 +464,7 @@ router.post('/resend-otp', async (req: AuthRequest, res: Response) => {
       console.error(`[OTP Delivery Failed] Resend OTP email (${deliveryResult.sentEmail ? 'OK' : 'FAILED'}) or SMS (${deliveryResult.sentSms ? 'OK' : 'FAILED'}) failed for ${session.email}.`);
       return res.status(400).json({
         success: false,
-        error: "We couldn't send the OTP right now. Please try again later."
+        error: "Unable to process request right now. Please try again later."
       });
     }
 
@@ -490,7 +490,7 @@ router.post('/resend-otp', async (req: AuthRequest, res: Response) => {
     console.error('[OTP Error] Server Exception in /resend-otp:', err);
     res.status(500).json({
       success: false,
-      error: "We couldn't send the OTP right now. Please try again later.",
+      error: "Unable to process request right now. Please try again later.",
       details: err.message || 'Server exception'
     });
   }

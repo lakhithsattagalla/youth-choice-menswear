@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
-import { isTokenRevoked, logSecurityEvent } from '../services/security.js';
+import { isTokenRevoked, logSecurityEvent } from '../services/security';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'youth_choice_mens_wear_jwt_secret_key_2026';
 

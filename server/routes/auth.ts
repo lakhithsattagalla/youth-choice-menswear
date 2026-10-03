@@ -2,9 +2,9 @@ import { Router, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
-import { db } from '../db';
-import { authenticateToken, requireAdmin, AuthRequest } from '../middleware/auth';
-import { sendOtpNotification } from '../services/notifier';
+import { db } from '../db.js';
+import { authenticateToken, requireAdmin, AuthRequest } from '../middleware/auth.js';
+import { sendOtpNotification } from '../services/notifier.js';
 import {
   sanitizeInput,
   checkAccountLockout,
@@ -15,7 +15,7 @@ import {
   verifyAndConsumeResetToken,
   logSecurityEvent,
   getSecurityAuditLogs
-} from '../services/security';
+} from '../services/security.js';
 
 const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'youth_choice_mens_wear_jwt_secret_key_2026';

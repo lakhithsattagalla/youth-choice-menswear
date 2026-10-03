@@ -1,15 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
-import { createRequire } from 'module';
-
-const require = createRequire(import.meta.url);
-let bundledDbData: any = null;
-try {
-  bundledDbData = require('../youth_choice_db.json');
-} catch (e) {
-  console.warn('Could not load bundled JSON via require fallback:', e);
-}
 
 const DB_FILE = path.resolve(process.cwd(), 'youth_choice_db.json');
 
@@ -288,13 +279,7 @@ export function loadDatabase() {
   }
 
   if (!loaded) {
-    if (bundledDbData && Array.isArray(bundledDbData.users)) {
-      dbData = JSON.parse(JSON.stringify(bundledDbData));
-      console.log('Database loaded successfully from bundled JSON.');
-      loaded = true;
-    } else {
-      seedDatabase();
-    }
+    seedDatabase();
   }
 
   // Ensure Admin User ALWAYS exists in database

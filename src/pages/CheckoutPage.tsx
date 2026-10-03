@@ -20,7 +20,7 @@ export const CheckoutPage: React.FC = () => {
   const [notes, setNotes] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [orderSuccess, setOrderSuccess] = useState<any>(null);
-  const [selectedUpiHandle, setSelectedUpiHandle] = useState<string>('9032644552@ybl');
+  const [selectedUpiHandle, setSelectedUpiHandle] = useState<string>('8522000504@ybl');
 
   // New Address form
   const [showNewAddr, setShowNewAddr] = useState<boolean>(false);
@@ -178,9 +178,9 @@ export const CheckoutPage: React.FC = () => {
               <span className="text-xs text-slate-400 block font-semibold">Select Store UPI Handle:</span>
               <div className="flex flex-wrap justify-center gap-2">
                 {[
-                  { handle: '9032644552@ybl', label: '9032644552@ybl (PhonePe / Yes Bank)' },
-                  { handle: '9032644552@paytm', label: '9032644552@paytm (Paytm)' },
-                  { handle: '9032644552@okicici', label: '9032644552@okicici (GPay / ICICI)' }
+                  { handle: '8522000504@ybl', label: '8522000504@ybl (PhonePe / Yes Bank)' },
+                  { handle: '8522000504@paytm', label: '8522000504@paytm (Paytm)' },
+                  { handle: '8522000504@okicici', label: '8522000504@okicici (GPay / ICICI)' }
                 ].map((item) => (
                   <button
                     key={item.handle}

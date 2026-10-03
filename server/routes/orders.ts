@@ -4,7 +4,7 @@ import { authenticateToken, requireAdmin, AuthRequest } from '../middleware/auth
 import { formatAIPaymentBotMessage } from './whatsappBot.js';
 
 const router = Router();
-const WHATSAPP_PHONE = process.env.WHATSAPP_PHONE_NUMBER || '919032644552';
+const WHATSAPP_PHONE = process.env.WHATSAPP_PHONE_NUMBER || '918522000504';
 const STORE_NAME = process.env.STORE_NAME || 'Youth Choice Mens Wear';
 
 // Create New Order & Generate WhatsApp Message
@@ -96,7 +96,7 @@ router.post('/checkout', authenticateToken, (req: AuthRequest, res: Response) =>
     const fullAddress = `${address.recipient_name}, ${address.street}, ${address.city}, ${address.state} - ${address.pincode} (Ph: ${address.phone})`;
 
     // Dynamic UPI Payment Link & QR Code Generator
-    const upiId = '9032644552@ybl';
+    const upiId = '8522000504@ybl';
     const payeeName = 'YouthChoiceMensWear';
     const cleanOrderNo = orderNumber.replace(/[^a-zA-Z0-9]/g, '');
     const upiUri = `upi://pay?pa=${upiId}&pn=${payeeName}&am=${grandTotal}&cu=INR&tn=Order_${cleanOrderNo}`;

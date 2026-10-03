@@ -270,7 +270,7 @@ export function loadDatabase() {
 
 export function seedDatabase() {
   console.log('Seeding initial Youth Choice Mens Wear database...');
-  const passwordHashAdmin = bcrypt.hashSync('admin123', 10);
+  const passwordHashAdmin = bcrypt.hashSync('Sai naveen', 10);
   const passwordHashUser = bcrypt.hashSync('customer123', 10);
 
   const now = new Date().toISOString();
@@ -279,10 +279,10 @@ export function seedDatabase() {
   dbData.users = [
     {
       id: 'user-admin-1',
-      email: 'admin@youthchoice.com',
+      email: 'youthchoicemenswear@gmail.com',
       password_hash: passwordHashAdmin,
       name: 'Youth Choice Admin',
-      phone: '+919032644552',
+      phone: '+918522000504',
       role: 'ADMIN',
       gender: 'MALE',
       created_at: now

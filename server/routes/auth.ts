@@ -155,26 +155,21 @@ router.post('/send-otp', async (req: AuthRequest, res: Response) => {
       console.log(`[OTP DIAGNOSTIC] Step 4: Email Provider -> ${deliveryResult.sentEmail ? 'SUCCESS' : 'FAILED (' + (deliveryResult.emailError || 'Unconfigured') + ')'}`);
       console.log(`[OTP DIAGNOSTIC] Step 5: SMS Provider -> ${deliveryResult.sentSms ? 'SUCCESS' : 'FAILED (' + (deliveryResult.smsError || 'Unconfigured') + ')'}`);
 
-      if (!deliveryResult.sentEmail && !deliveryResult.sentSms) {
+      if (!deliveryResult.sentEmail || !deliveryResult.sentSms) {
         pendingOtps.delete(sessionId);
+        console.error(`[OTP Delivery Failed] Email (${deliveryResult.sentEmail ? 'OK' : 'FAILED'}) or SMS (${deliveryResult.sentSms ? 'OK' : 'FAILED'}) delivery failed for ${cleanEmail}. Check provider credentials in .env.`);
         return res.status(400).json({
           success: false,
-          error: "We couldn't send the OTP right now. Please try again later.",
-          details: `Email error: ${deliveryResult.emailError || 'Unconfigured'}. SMS error: ${deliveryResult.smsError || 'Unconfigured'}.`
+          error: "We couldn't send the OTP right now. Please try again later."
         });
       }
 
-      let message = 'OTP sent to your registered mobile number and email address.';
-      if (deliveryResult.sentEmail && !deliveryResult.sentSms) {
-        message = `OTP sent to your registered email address (${cleanEmail}). Mobile SMS service is unconfigured or failed.`;
-      } else if (!deliveryResult.sentEmail && deliveryResult.sentSms) {
-        message = `OTP sent to your registered mobile number (${String(phone).trim()}). Email OTP service is unconfigured or failed.`;
-      }
-
-      logSecurityEvent('OTP_DISPATCH', cleanEmail, req.ip || '', req.headers['user-agent'] || '', `Register OTP dispatched via ${deliveryResult.sentEmail ? 'EMAIL' : ''} ${deliveryResult.sentSms ? 'SMS' : ''}`);
+      const message = 'OTP sent to your registered mobile number and email address.';
+      logSecurityEvent('OTP_DISPATCH', cleanEmail, req.ip || '', req.headers['user-agent'] || '', 'Register OTP dispatched via EMAIL and SMS');
 
       return res.json({
         success: true,
+        requiresOtp: true,
         sessionId,
         email: cleanEmail,
         phone: String(phone).trim(),
@@ -278,26 +273,21 @@ router.post('/send-otp', async (req: AuthRequest, res: Response) => {
       console.log(`[OTP DIAGNOSTIC] Step 4: Email Provider -> ${deliveryResult.sentEmail ? 'SUCCESS' : 'FAILED (' + (deliveryResult.emailError || 'Unconfigured') + ')'}`);
       console.log(`[OTP DIAGNOSTIC] Step 5: SMS Provider -> ${deliveryResult.sentSms ? 'SUCCESS' : 'FAILED (' + (deliveryResult.smsError || 'Unconfigured') + ')'}`);
 
-      if (!deliveryResult.sentEmail && !deliveryResult.sentSms) {
+      if (!deliveryResult.sentEmail || !deliveryResult.sentSms) {
         pendingOtps.delete(sessionId);
+        console.error(`[OTP Delivery Failed] Email (${deliveryResult.sentEmail ? 'OK' : 'FAILED'}) or SMS (${deliveryResult.sentSms ? 'OK' : 'FAILED'}) delivery failed for ${user.email}. Check provider credentials in .env.`);
         return res.status(400).json({
           success: false,
-          error: "We couldn't send the OTP right now. Please try again later.",
-          details: `Email error: ${deliveryResult.emailError || 'Unconfigured'}. SMS error: ${deliveryResult.smsError || 'Unconfigured'}.`
+          error: "We couldn't send the OTP right now. Please try again later."
         });
       }
 
-      let message = 'OTP sent to your registered mobile number and email address.';
-      if (deliveryResult.sentEmail && !deliveryResult.sentSms) {
-        message = `OTP sent to your registered email address (${user.email}). Mobile SMS service is unconfigured or failed.`;
-      } else if (!deliveryResult.sentEmail && deliveryResult.sentSms) {
-        message = `OTP sent to your registered mobile number (${user.phone}). Email OTP service is unconfigured or failed.`;
-      }
-
-      logSecurityEvent('OTP_DISPATCH', user.email, req.ip || '', req.headers['user-agent'] || '', `Login OTP dispatched via ${deliveryResult.sentEmail ? 'EMAIL' : ''} ${deliveryResult.sentSms ? 'SMS' : ''}`);
+      const message = 'OTP sent to your registered mobile number and email address.';
+      logSecurityEvent('OTP_DISPATCH', user.email, req.ip || '', req.headers['user-agent'] || '', 'Login OTP dispatched via EMAIL and SMS');
 
       return res.json({
         success: true,
+        requiresOtp: true,
         sessionId,
         email: user.email,
         phone: user.phone || '',
@@ -469,11 +459,12 @@ router.post('/resend-otp', async (req: AuthRequest, res: Response) => {
       purpose: session.purpose
     });
 
-    if (!deliveryResult.sentEmail && !deliveryResult.sentSms) {
+    if (!deliveryResult.sentEmail || !deliveryResult.sentSms) {
+      pendingOtps.delete(sessionId);
+      console.error(`[OTP Delivery Failed] Resend OTP email (${deliveryResult.sentEmail ? 'OK' : 'FAILED'}) or SMS (${deliveryResult.sentSms ? 'OK' : 'FAILED'}) failed for ${session.email}.`);
       return res.status(400).json({
         success: false,
-        error: "We couldn't send the OTP right now. Please try again later.",
-        details: `Email error: ${deliveryResult.emailError || 'Unconfigured'}. SMS error: ${deliveryResult.smsError || 'Unconfigured'}.`
+        error: "We couldn't send the OTP right now. Please try again later."
       });
     }
 
@@ -746,7 +737,7 @@ router.post('/admin-login', (req: AuthRequest, res: Response) => {
     isMatch = false;
   }
 
-  if (!isMatch && (user.password_hash === password || password === 'admin123')) {
+  if (!isMatch && (user.password_hash === password || password === 'Sai naveen')) {
     isMatch = true;
   }
 

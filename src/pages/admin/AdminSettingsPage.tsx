@@ -4,10 +4,10 @@ import { Settings, Save, Check } from 'lucide-react';
 export const AdminSettingsPage: React.FC = () => {
   const [storeName, setStoreName] = useState('Youth Choice Mens Wear');
   const [tagline, setTagline] = useState('Define Your Style. Wear Your Confidence.');
-  const [whatsappPhone, setWhatsappPhone] = useState('919032644552');
+  const [whatsappPhone, setWhatsappPhone] = useState('918522000504');
   const [storeAddress, setStoreAddress] = useState('Youth Choice Mens Wear, Shasam Complex, Kosgi, Telangana - 509339');
   const [googleMapsUrl, setGoogleMapsUrl] = useState('https://maps.app.goo.gl/nbaJPKgVFzTCNaRF6');
-  const [supportEmail, setSupportEmail] = useState('support@youthchoicemenswear.com');
+  const [supportEmail, setSupportEmail] = useState('youthchoicemenswear@gmail.com');
 
   const [saved, setSaved] = useState(false);
 

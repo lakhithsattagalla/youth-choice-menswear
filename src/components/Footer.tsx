@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, MapPin, Instagram, Facebook, Youtube, ShieldCheck, Truck, RefreshCw, MessageSquare } from 'lucide-react';
+import { Mail, MapPin, ShieldCheck, Truck, RefreshCw, MessageSquare } from 'lucide-react';
 
 export const Footer: React.FC = () => {
   return (
@@ -56,7 +56,11 @@ export const Footer: React.FC = () => {
         {/* Brand Story */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-lg bg-amber-500 flex items-center justify-center font-serif text-black font-bold text-xl">YC</div>
+            <img 
+              src="/yc-logo.jpg" 
+              alt="Youth Choice Logo" 
+              className="w-10 h-10 rounded-xl object-contain bg-white p-0.5 shadow-md" 
+            />
             <div>
               <span className="font-display font-extrabold text-white text-lg tracking-wider block">YOUTH CHOICE</span>
               <span className="text-[10px] tracking-[0.25em] text-amber-400 font-semibold uppercase block">MENS WEAR</span>
@@ -66,17 +70,6 @@ export const Footer: React.FC = () => {
             “Define Your Style. Wear Your Confidence.” <br />
             Youth Choice Mens Wear brings you contemporary menswear and women’s fashion crafted for timeless elegance, everyday comfort, and high-impact style.
           </p>
-          <div className="flex items-center space-x-4 text-slate-400 pt-2">
-            <a href="#" className="w-9 h-9 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center hover:text-amber-400 hover:border-amber-500 transition-colors">
-              <Instagram className="w-4 h-4" />
-            </a>
-            <a href="#" className="w-9 h-9 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center hover:text-amber-400 hover:border-amber-500 transition-colors">
-              <Facebook className="w-4 h-4" />
-            </a>
-            <a href="#" className="w-9 h-9 rounded-full bg-neutral-900 border border-neutral-800 flex items-center justify-center hover:text-amber-400 hover:border-amber-500 transition-colors">
-              <Youtube className="w-4 h-4" />
-            </a>
-          </div>
         </div>
 
         {/* Shop Navigation */}
@@ -100,7 +93,7 @@ export const Footer: React.FC = () => {
             <li><Link to="/account/orders" className="hover:text-amber-400 transition-colors">Track Orders</Link></li>
             <li><Link to="/wishlist" className="hover:text-amber-400 transition-colors">Wishlist</Link></li>
             <li><Link to="/cart" className="hover:text-amber-400 transition-colors">Shopping Cart</Link></li>
-            <li><a href="https://wa.me/919032644552" target="_blank" rel="noreferrer" className="hover:text-amber-400 transition-colors">WhatsApp Helpdesk</a></li>
+            <li><a href="https://wa.me/918522000504" target="_blank" rel="noreferrer" className="hover:text-amber-400 transition-colors">WhatsApp Helpdesk</a></li>
           </ul>
         </div>
 
@@ -124,7 +117,9 @@ export const Footer: React.FC = () => {
             </li>
             <li className="flex items-center space-x-3">
               <Mail className="w-4 h-4 text-amber-400 shrink-0" />
-              <span>support@youthchoicemenswear.com</span>
+              <a href="mailto:youthchoicemenswear@gmail.com" className="hover:text-amber-400 transition-colors">
+                youthchoicemenswear@gmail.com
+              </a>
             </li>
           </ul>
         </div>

@@ -2,8 +2,8 @@
   "users": [
     {
       "id": "user-admin-1",
-      "email": "admin@youthchoice.com",
-      "password_hash": "$2a$10$Fis0U2ft5BnMunOExAg8oedNYPuBTSiejq4ZpsShrrVYf6mFCKMIm",
+      "email": "youthchoicemenswear@gmail.com",
+      "password_hash": "$2a$10$KiMqTzyIyxH7EK8AY1oBsO2GlL67v0WyLISUKuxXPB51RuNn6R/q6",
       "name": "Youth Choice Admin",
       "phone": "+919032644552",
       "role": "ADMIN",
@@ -59,6 +59,26 @@
       "role": "CUSTOMER",
       "gender": "MALE",
       "created_at": "2026-10-01T05:16:47.744Z"
+    },
+    {
+      "id": "user-1790873510638",
+      "email": "shireesha1000@gmail.com",
+      "password_hash": "$2a$10$uTec4GLzlV7kWenJJqqrMeMZQNbasJY8jplTPT46NLJ05.UOsZJYu",
+      "name": "shireesha",
+      "phone": "+91 7995027616",
+      "role": "CUSTOMER",
+      "gender": "MALE",
+      "created_at": "2026-10-01T16:51:50.749Z"
+    },
+    {
+      "id": "user-1790873825171",
+      "email": "gandhamsatwik2025@gmail.com",
+      "password_hash": "$2a$10$hLrXXLzWdYpJp6F37pnmMOTj3J5hnJMZ.oyPNBs9B/7oBZofXLL7i",
+      "name": "gandham",
+      "phone": "+91 8897911679",
+      "role": "CUSTOMER",
+      "gender": "MALE",
+      "created_at": "2026-10-01T16:57:05.304Z"
     }
   ],
   "addresses": [
@@ -96,6 +116,18 @@
       "city": "Hyderabad",
       "state": "Telangana",
       "pincode": "500034",
+      "is_default": true
+    },
+    {
+      "id": "addr-1791042517326",
+      "user_id": "user-1790831807552",
+      "type": "HOME",
+      "recipient_name": "sai charan",
+      "phone": "+91 6300614514",
+      "street": "Mahabubnagar",
+      "city": "Hyderabad",
+      "state": "Telangana",
+      "pincode": "5009001",
       "is_default": true
     }
   ],
@@ -817,7 +849,7 @@
       "color": "Charcoal",
       "size": "XL",
       "sku": "YCMC-JNS-03-CH-XL",
-      "stock": 15,
+      "stock": 14,
       "created_at": "2026-09-21T12:42:13.910Z"
     },
     {
@@ -1332,10 +1364,37 @@
       "variant_id": "var-prod-8-White-L",
       "quantity": 1,
       "created_at": "2026-09-21T16:24:29.623Z"
+    },
+    {
+      "id": "cart-1790873844345",
+      "user_id": "user-1790873825171",
+      "variant_id": "var-prod-3-Charcoal-M",
+      "quantity": 1,
+      "created_at": "2026-10-01T16:57:24.345Z"
     }
   ],
   "wishlist_items": [],
   "orders": [
+    {
+      "id": "ord-1791042519508",
+      "order_number": "YC-84602",
+      "user_id": "user-1790831807552",
+      "customer_name": "sai charan",
+      "customer_phone": "+91 6300614514",
+      "delivery_address": "sai charan, Mahabubnagar, Hyderabad, Telangana - 5009001 (Ph: +91 6300614514)",
+      "subtotal": 2799,
+      "discount": 0,
+      "delivery_fee": 0,
+      "cod_fee": 0,
+      "payment_method": "ONLINE_UPI",
+      "coupon_code": "",
+      "grand_total": 2799,
+      "status": "PENDING_CONFIRMATION",
+      "whatsapp_message": "Hello Youth Choice Mens Wear!\nI would like to place an order.\n\n📋 *Order ID:* YC-84602\n👤 *Customer Name:* sai charan\n📞 *Phone:* +91 6300614514\n💳 *Payment Method:* Online UPI / Scan QR\n📍 *Delivery Address:* Mahabubnagar, Hyderabad, Telangana - 5009001\n\n🛍️ *Order Items:*\n1. *511 Slim Fit Tapered Stretch Denim Jeans* (Levi's)\n   Size: XL | Color: Charcoal | Qty: 1\n   Price: ₹2,799\n\n💵 *Order Bill Summary:*\nSubtotal: ₹2,799\nDelivery Fee: FREE\n*Grand Total: ₹2,799*\n\n💳 *UPI Payment Details:*\nUPI ID: 8522000504@ybl\nDirect Pay Link: upi://pay?pa=8522000504@ybl&pn=YouthChoiceMensWear&am=2799&cu=INR&tn=Order_YC84602\n\n🤖 *AI BOT REQUEST:* Please reply with the Payment QR Code for ₹2,799 for Order #YC-84602. Thank you!",
+      "notes": "",
+      "created_at": "2026-10-03T15:48:39.508Z",
+      "updated_at": "2026-10-03T15:48:39.508Z"
+    },
     {
       "id": "ord-1790605104109",
       "order_number": "YC-16161",
@@ -1767,6 +1826,20 @@
       "unit_price": 1299,
       "total_price": 1299,
       "image_url": "https://images.unsplash.com/photo-1586363104862-3a5e2ab60d99?w=800&auto=format&fit=crop&q=80"
+    },
+    {
+      "id": "item-ord-1791042519508-0",
+      "order_id": "ord-1791042519508",
+      "product_id": "prod-3",
+      "variant_id": "var-prod-3-Charcoal-XL",
+      "product_name": "511 Slim Fit Tapered Stretch Denim Jeans",
+      "brand_name": "Levi's",
+      "color": "Charcoal",
+      "size": "XL",
+      "quantity": 1,
+      "unit_price": 2799,
+      "total_price": 2799,
+      "image_url": "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800&auto=format&fit=crop&q=80"
     }
   ],
   "reviews": [
@@ -3034,6 +3107,59 @@
       "user_id": "user-customer-1",
       "metadata": "{\"order_number\":\"YC-16161\",\"grand_total\":1399}",
       "created_at": "2026-09-28T14:18:24.109Z"
+    },
+    {
+      "id": "evt-1790873839996",
+      "event_type": "PRODUCT_VIEW",
+      "product_id": "prod-3",
+      "category_id": "cat-men-jeans",
+      "brand_id": "brand-levis",
+      "created_at": "2026-10-01T16:57:19.996Z"
+    },
+    {
+      "id": "evt-1790873840002",
+      "event_type": "PRODUCT_VIEW",
+      "product_id": "prod-3",
+      "category_id": "cat-men-jeans",
+      "brand_id": "brand-levis",
+      "created_at": "2026-10-01T16:57:20.002Z"
+    },
+    {
+      "id": "evt-1790873844345",
+      "event_type": "ADD_TO_CART",
+      "user_id": "user-1790873825171",
+      "product_id": "prod-3",
+      "created_at": "2026-10-01T16:57:24.345Z"
+    },
+    {
+      "id": "evt-1791042482074",
+      "event_type": "PRODUCT_VIEW",
+      "product_id": "prod-3",
+      "category_id": "cat-men-jeans",
+      "brand_id": "brand-levis",
+      "created_at": "2026-10-03T15:48:02.074Z"
+    },
+    {
+      "id": "evt-1791042482087",
+      "event_type": "PRODUCT_VIEW",
+      "product_id": "prod-3",
+      "category_id": "cat-men-jeans",
+      "brand_id": "brand-levis",
+      "created_at": "2026-10-03T15:48:02.087Z"
+    },
+    {
+      "id": "evt-1791042485217",
+      "event_type": "ADD_TO_CART",
+      "user_id": "user-1790831807552",
+      "product_id": "prod-3",
+      "created_at": "2026-10-03T15:48:05.217Z"
+    },
+    {
+      "id": "evt-1791042519549",
+      "event_type": "WHATSAPP_ORDER",
+      "user_id": "user-1790831807552",
+      "metadata": "{\"order_number\":\"YC-84602\",\"grand_total\":2799}",
+      "created_at": "2026-10-03T15:48:39.508Z"
     }
   ]
 }

@@ -255,17 +255,60 @@ export function saveDatabase() {
 }
 
 export function loadDatabase() {
-  if (fs.existsSync(DB_FILE)) {
-    try {
-      const data = fs.readFileSync(DB_FILE, 'utf-8');
-      dbData = JSON.parse(data);
-      console.log('Database loaded successfully from JSON.');
-      return;
-    } catch (e) {
-      console.error('Failed to parse database JSON, initializing fresh...');
+  const possiblePaths = [
+    DB_FILE,
+    path.resolve(process.cwd(), 'youth_choice_db.json'),
+    path.resolve(__dirname, '../youth_choice_db.json'),
+    path.resolve(__dirname, '../../youth_choice_db.json'),
+    '/tmp/youth_choice_db.json'
+  ];
+
+  let loaded = false;
+  for (const dbPath of possiblePaths) {
+    if (fs.existsSync(dbPath)) {
+      try {
+        const data = fs.readFileSync(dbPath, 'utf-8');
+        dbData = JSON.parse(data);
+        console.log('Database loaded successfully from:', dbPath);
+        loaded = true;
+        break;
+      } catch (e) {
+        console.error('Failed to parse database JSON at:', dbPath);
+      }
     }
   }
-  seedDatabase();
+
+  if (!loaded) {
+    seedDatabase();
+  }
+
+  // Ensure Admin User ALWAYS exists in database
+  ensureAdminUser();
+}
+
+function ensureAdminUser() {
+  if (!dbData.users) dbData.users = [];
+  const adminEmail = 'youthchoicemenswear@gmail.com';
+  const adminPhone = '8522000504';
+
+  let admin = dbData.users.find(u => u.email.trim().toLowerCase() === adminEmail || (u.phone && u.phone.includes(adminPhone)));
+  if (!admin) {
+    admin = {
+      id: 'user-admin-1',
+      email: adminEmail,
+      password_hash: bcrypt.hashSync('Sai naveen', 10),
+      name: 'Youth Choice Admin',
+      phone: '+918522000504',
+      role: 'ADMIN',
+      gender: 'MALE',
+      created_at: new Date().toISOString()
+    };
+    dbData.users.unshift(admin);
+  } else {
+    admin.role = 'ADMIN';
+    admin.email = adminEmail;
+    admin.phone = '+918522000504';
+  }
 }
 
 export function seedDatabase() {

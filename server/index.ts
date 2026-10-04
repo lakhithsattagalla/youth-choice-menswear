@@ -54,6 +54,17 @@ app.use('/admin', adminRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/analytics', analyticsRoutes);
 
+const apiRouter = express.Router();
+
+apiRouter.get('/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    store: 'Youth Choice Mens Wear',
+    tagline: 'Define Your Style. Wear Your Confidence.',
+    timestamp: new Date().toISOString()
+  });
+});
+
 app.use('/api', apiRouter);
 app.use('/', apiRouter);
 

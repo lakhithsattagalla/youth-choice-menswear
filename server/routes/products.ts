@@ -24,7 +24,7 @@ router.get('/', (req: AuthRequest, res: Response) => {
       isNewArrival
     } = req.query as Record<string, string>;
 
-    let products = db.data.products.filter(p => p.status === 'ACTIVE');
+    let products = (db.data?.products || []).filter(p => p.status === 'ACTIVE');
 
     // Gender Filter
     if (gender && gender !== 'ALL') {
@@ -33,7 +33,7 @@ router.get('/', (req: AuthRequest, res: Response) => {
 
     // Category Filter (ID or slug)
     if (category) {
-      const catObj = db.data.categories.find(c => c.id === category || c.slug === category);
+      const catObj = (db.data?.categories || []).find(c => c.id === category || c.slug === category);
       if (catObj) {
         products = products.filter(p => p.category_id === catObj.id);
       }
@@ -41,7 +41,7 @@ router.get('/', (req: AuthRequest, res: Response) => {
 
     // Brand Filter (ID or Name)
     if (brand) {
-      const brandObj = db.data.brands.find(b => b.id === brand || b.name.toLowerCase() === brand.toLowerCase());
+      const brandObj = (db.data?.brands || []).find(b => b.id === brand || b.name.toLowerCase() === brand.toLowerCase());
       if (brandObj) {
         products = products.filter(p => p.brand_id === brandObj.id);
       }
@@ -51,8 +51,8 @@ router.get('/', (req: AuthRequest, res: Response) => {
     if (search && search.trim() !== '') {
       const query = search.toLowerCase().trim();
       products = products.filter(p => {
-        const brandName = db.data.brands.find(b => b.id === p.brand_id)?.name.toLowerCase() || '';
-        const catName = db.data.categories.find(c => c.id === p.category_id)?.name.toLowerCase() || '';
+        const brandName = (db.data?.brands || []).find(b => b.id === p.brand_id)?.name.toLowerCase() || '';
+        const catName = (db.data?.categories || []).find(c => c.id === p.category_id)?.name.toLowerCase() || '';
         return (
           p.name.toLowerCase().includes(query) ||
           p.description.toLowerCase().includes(query) ||
@@ -84,7 +84,7 @@ router.get('/', (req: AuthRequest, res: Response) => {
     // Color or Size Filter via Variant lookup
     if (size || color || inStock === 'true') {
       products = products.filter(p => {
-        let variants = db.data.product_variants.filter(v => v.product_id === p.id);
+        let variants = (db.data?.product_variants || []).filter(v => v.product_id === p.id);
         if (size) variants = variants.filter(v => v.size.toUpperCase() === size.toUpperCase());
         if (color) variants = variants.filter(v => v.color.toLowerCase() === color.toLowerCase());
         if (inStock === 'true') variants = variants.filter(v => v.stock > 0);
@@ -105,10 +105,10 @@ router.get('/', (req: AuthRequest, res: Response) => {
 
     // Populate Brand, Category, Images, and Variants for each product
     const fullProducts = products.map(p => {
-      const brandObj = db.data.brands.find(b => b.id === p.brand_id);
-      const catObj = db.data.categories.find(c => c.id === p.category_id);
-      const images = db.data.product_images.filter(img => img.product_id === p.id);
-      const variants = db.data.product_variants.filter(v => v.product_id === p.id);
+      const brandObj = (db.data?.brands || []).find(b => b.id === p.brand_id);
+      const catObj = (db.data?.categories || []).find(c => c.id === p.category_id);
+      const images = (db.data?.product_images || []).filter(img => img.product_id === p.id);
+      const variants = (db.data?.product_variants || []).filter(v => v.product_id === p.id);
 
       const totalStock = variants.reduce((sum, v) => sum + v.stock, 0);
 
@@ -123,9 +123,9 @@ router.get('/', (req: AuthRequest, res: Response) => {
       };
     });
 
-    res.json({ products: fullProducts, count: fullProducts.length });
+    res.json({ success: true, products: fullProducts, count: fullProducts.length });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, message: err.message || 'Failed to fetch products' });
   }
 });
 
@@ -133,19 +133,20 @@ router.get('/', (req: AuthRequest, res: Response) => {
 router.get('/:id', (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const product = db.data.products.find(p => p.id === id || p.slug === id);
+    const product = (db.data?.products || []).find(p => p.id === id || p.slug === id);
 
     if (!product) {
-      return res.status(404).json({ error: 'Product not found' });
+      return res.status(404).json({ success: false, message: 'Product not found' });
     }
 
-    const brandObj = db.data.brands.find(b => b.id === product.brand_id);
-    const catObj = db.data.categories.find(c => c.id === product.category_id);
-    const images = db.data.product_images.filter(img => img.product_id === product.id);
-    const variants = db.data.product_variants.filter(v => v.product_id === product.id);
-    const reviews = db.data.reviews.filter(r => r.product_id === product.id);
+    const brandObj = (db.data?.brands || []).find(b => b.id === product.brand_id);
+    const catObj = (db.data?.categories || []).find(c => c.id === product.category_id);
+    const images = (db.data?.product_images || []).filter(img => img.product_id === product.id);
+    const variants = (db.data?.product_variants || []).filter(v => v.product_id === product.id);
+    const reviews = (db.data?.reviews || []).filter(r => r.product_id === product.id);
 
     // Track analytics event
+    if (!db.data.analytics_events) db.data.analytics_events = [];
     db.data.analytics_events.push({
       id: `evt-${Date.now()}`,
       event_type: 'PRODUCT_VIEW',
@@ -158,6 +159,7 @@ router.get('/:id', (req: AuthRequest, res: Response) => {
     db.save();
 
     res.json({
+      success: true,
       product: {
         ...product,
         brand: brandObj,
@@ -168,7 +170,7 @@ router.get('/:id', (req: AuthRequest, res: Response) => {
       }
     });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, message: err.message || 'Failed to fetch product details' });
   }
 });
 
@@ -192,7 +194,7 @@ router.post('/', authenticateToken, requireAdmin, (req: AuthRequest, res: Respon
     } = req.body;
 
     if (!name || !brand_id || !category_id || !mrp || !selling_price || !sku_prefix) {
-      return res.status(400).json({ error: 'Missing required product fields' });
+      return res.status(400).json({ success: false, message: 'Missing required product fields' });
     }
 
     const prodId = `prod-${Date.now()}`;
@@ -224,9 +226,11 @@ router.post('/', authenticateToken, requireAdmin, (req: AuthRequest, res: Respon
       created_at: now
     };
 
+    if (!db.data.products) db.data.products = [];
     db.data.products.push(newProduct);
 
     // Save Images
+    if (!db.data.product_images) db.data.product_images = [];
     if (Array.isArray(images)) {
       images.forEach((img: any, idx: number) => {
         db.data.product_images.push({
@@ -241,6 +245,7 @@ router.post('/', authenticateToken, requireAdmin, (req: AuthRequest, res: Respon
     }
 
     // Save Variants
+    if (!db.data.product_variants) db.data.product_variants = [];
     if (Array.isArray(variants)) {
       variants.forEach((v: any) => {
         const variantSku = v.sku || `${sku_prefix}-${(v.color || 'CLR').substring(0, 2).toUpperCase()}-${v.size}`;
@@ -257,9 +262,9 @@ router.post('/', authenticateToken, requireAdmin, (req: AuthRequest, res: Respon
     }
 
     db.save();
-    res.status(201).json({ message: 'Product created successfully', product: newProduct });
+    res.status(201).json({ success: true, message: 'Product created successfully', product: newProduct });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, message: err.message || 'Failed to create product' });
   }
 });
 
@@ -267,10 +272,10 @@ router.post('/', authenticateToken, requireAdmin, (req: AuthRequest, res: Respon
 router.put('/:id', authenticateToken, requireAdmin, (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const prodIndex = db.data.products.findIndex(p => p.id === id);
+    const prodIndex = (db.data?.products || []).findIndex(p => p.id === id);
 
     if (prodIndex === -1) {
-      return res.status(404).json({ error: 'Product not found' });
+      return res.status(404).json({ success: false, message: 'Product not found' });
     }
 
     const current = db.data.products[prodIndex];
@@ -319,8 +324,7 @@ router.put('/:id', authenticateToken, requireAdmin, (req: AuthRequest, res: Resp
 
     // Handle Images update if provided
     if (Array.isArray(images) && images.length > 0) {
-      // Filter out existing images for this product
-      db.data.product_images = db.data.product_images.filter(img => img.product_id !== id);
+      db.data.product_images = (db.data?.product_images || []).filter(img => img.product_id !== id);
 
       images.forEach((img: any, idx: number) => {
         db.data.product_images.push({
@@ -336,7 +340,7 @@ router.put('/:id', authenticateToken, requireAdmin, (req: AuthRequest, res: Resp
 
     // Handle Variants update if provided
     if (Array.isArray(variants)) {
-      const existingVariants = db.data.product_variants.filter(v => v.product_id === id);
+      const existingVariants = (db.data?.product_variants || []).filter(v => v.product_id === id);
       const updatedVariantIds = new Set<string>();
 
       variants.forEach((v: any) => {
@@ -365,14 +369,14 @@ router.put('/:id', authenticateToken, requireAdmin, (req: AuthRequest, res: Resp
       });
 
       // Remove variants that were removed by admin
-      db.data.product_variants = db.data.product_variants.filter(v => v.product_id !== id || updatedVariantIds.has(v.id));
+      db.data.product_variants = (db.data?.product_variants || []).filter(v => v.product_id !== id || updatedVariantIds.has(v.id));
     }
 
     db.save();
 
-    res.json({ message: 'Product updated successfully', product: updated });
+    res.json({ success: true, message: 'Product updated successfully', product: updated });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, message: err.message || 'Failed to update product' });
   }
 });
 
@@ -382,18 +386,18 @@ router.delete('/:id', authenticateToken, requireAdmin, (req: AuthRequest, res: R
     const { id } = req.params;
     const targetId = String(id).trim();
 
-    db.data.products = db.data.products.filter(p => String(p.id).trim() !== targetId && String(p.slug).trim() !== targetId);
-    db.data.product_images = db.data.product_images.filter(img => String(img.product_id).trim() !== targetId);
-    db.data.product_variants = db.data.product_variants.filter(v => String(v.product_id).trim() !== targetId);
-    db.data.cart_items = db.data.cart_items.filter(c => {
-      const variant = db.data.product_variants.find(v => String(v.id) === String(c.variant_id));
+    db.data.products = (db.data?.products || []).filter(p => String(p.id).trim() !== targetId && String(p.slug).trim() !== targetId);
+    db.data.product_images = (db.data?.product_images || []).filter(img => String(img.product_id).trim() !== targetId);
+    db.data.product_variants = (db.data?.product_variants || []).filter(v => String(v.product_id).trim() !== targetId);
+    db.data.cart_items = (db.data?.cart_items || []).filter(c => {
+      const variant = (db.data?.product_variants || []).find(v => String(v.id) === String(c.variant_id));
       return variant && String(variant.product_id).trim() !== targetId;
     });
 
     db.save();
-    res.json({ message: 'Product deleted successfully', id: targetId });
+    res.json({ success: true, message: 'Product deleted successfully', id: targetId });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, message: err.message || 'Failed to delete product' });
   }
 });
 

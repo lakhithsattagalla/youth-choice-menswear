@@ -953,12 +953,21 @@ router.post('/google/complete-profile', (req: AuthRequest, res: Response) => {
 
 // Get Current User Profile
 router.get('/me', authenticateToken, (req: AuthRequest, res: Response) => {
-  const user = db.data.users.find(u => u.id === req.user?.id);
-  if (!user) {
-    return res.status(404).json({ error: 'User not found' });
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const user = (db.data?.users || []).find(u => u.id === userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    const { password_hash, ...safeUser } = user;
+    res.json({ success: true, user: safeUser });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Failed to fetch user profile' });
   }
-  const { password_hash, ...safeUser } = user;
-  res.json({ user: safeUser });
 });
 
 export default router;

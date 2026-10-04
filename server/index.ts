@@ -79,12 +79,27 @@ if (fs.existsSync(distPath)) {
   });
 }
 
+// 404 Handler for unmatched API routes
+app.use('/api/*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'API endpoint not found'
+  });
+});
+
 // Global Express Error Handler
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
   console.error('[Express Global Error]:', err);
   if (!res.headersSent) {
-    res.status(err.status || 500).json({
-      error: err.message || 'Internal Server Error'
+    const statusCode = err.status || err.statusCode || 500;
+    const clientMessage = statusCode >= 500
+      ? 'Something went wrong. Please try again later.'
+      : (err.message || 'Invalid request');
+
+    res.status(statusCode).json({
+      success: false,
+      error: clientMessage,
+      message: clientMessage
     });
   }
 });

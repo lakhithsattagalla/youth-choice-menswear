@@ -200,120 +200,142 @@ router.post('/checkout', authenticateToken, (req: AuthRequest, res: Response) =>
 
 // Get User Orders
 router.get('/my-orders', authenticateToken, (req: AuthRequest, res: Response) => {
-  const userId = req.user!.id;
-  const orders = db.data.orders.filter(o => o.user_id === userId);
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
 
-  const fullOrders = orders.map(o => {
-    const items = db.data.order_items.filter(i => i.order_id === o.id);
-    return { ...o, items };
-  });
+    const orders = (db.data?.orders || []).filter(o => o.user_id === userId);
 
-  res.json({ orders: fullOrders });
+    const fullOrders = orders.map(o => {
+      const items = (db.data?.order_items || []).filter(i => i.order_id === o.id);
+      return { ...o, items };
+    });
+
+    res.json({ success: true, orders: fullOrders });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Failed to fetch user orders' });
+  }
 });
 
 // Get Single Order Details
 router.get('/:id', authenticateToken, (req: AuthRequest, res: Response) => {
-  const { id } = req.params;
-  const userId = req.user!.id;
+  try {
+    const { id } = req.params;
+    const userId = req.user?.id;
 
-  const order = db.data.orders.find(o => (o.id === id || o.order_number === id) && (req.user?.role === 'ADMIN' || o.user_id === userId));
-  if (!order) {
-    return res.status(404).json({ error: 'Order not found' });
+    const order = (db.data?.orders || []).find(o => (o.id === id || o.order_number === id) && (req.user?.role === 'ADMIN' || o.user_id === userId));
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
+
+    const items = (db.data?.order_items || []).filter(i => i.order_id === order.id);
+    res.json({ success: true, order: { ...order, items } });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Failed to fetch order details' });
   }
-
-  const items = db.data.order_items.filter(i => i.order_id === order.id);
-  res.json({ order: { ...order, items } });
 });
 
 // Admin: Get All Orders
 router.get('/', authenticateToken, requireAdmin, (req: AuthRequest, res: Response) => {
-  const { status, search } = req.query as Record<string, string>;
-  let orders = db.data.orders;
+  try {
+    const { status, search } = req.query as Record<string, string>;
+    let orders = db.data?.orders || [];
 
-  if (status && status !== 'ALL') {
-    orders = orders.filter(o => o.status === status);
+    if (status && status !== 'ALL') {
+      orders = orders.filter(o => o.status === status);
+    }
+
+    if (search) {
+      const q = search.toLowerCase();
+      orders = orders.filter(o =>
+        o.order_number.toLowerCase().includes(q) ||
+        o.customer_name.toLowerCase().includes(q) ||
+        o.customer_phone.includes(q)
+      );
+    }
+
+    const fullOrders = orders.map(o => {
+      const items = (db.data?.order_items || []).filter(i => i.order_id === o.id);
+      return { ...o, items };
+    });
+
+    res.json({ success: true, orders: fullOrders });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Failed to fetch orders' });
   }
-
-  if (search) {
-    const q = search.toLowerCase();
-    orders = orders.filter(o =>
-      o.order_number.toLowerCase().includes(q) ||
-      o.customer_name.toLowerCase().includes(q) ||
-      o.customer_phone.includes(q)
-    );
-  }
-
-  const fullOrders = orders.map(o => {
-    const items = db.data.order_items.filter(i => i.order_id === o.id);
-    return { ...o, items };
-  });
-
-  res.json({ orders: fullOrders });
 });
 
 // Admin: Update Order Status
 router.put('/:id/status', authenticateToken, requireAdmin, (req: AuthRequest, res: Response) => {
-  const { id } = req.params;
-  const { status, notes } = req.body;
+  try {
+    const { id } = req.params;
+    const { status, notes } = req.body;
 
-  const orderIndex = db.data.orders.findIndex(o => o.id === id || o.order_number === id);
-  if (orderIndex === -1) {
-    return res.status(404).json({ error: 'Order not found' });
-  }
+    const orderIndex = (db.data?.orders || []).findIndex(o => o.id === id || o.order_number === id);
+    if (orderIndex === -1) {
+      return res.status(404).json({ success: false, message: 'Order not found' });
+    }
 
-  const prevStatus = db.data.orders[orderIndex].status;
-  const updatedOrder = {
-    ...db.data.orders[orderIndex],
-    status: status || prevStatus,
-    notes: notes !== undefined ? notes : db.data.orders[orderIndex].notes,
-    updated_at: new Date().toISOString()
-  };
+    const prevStatus = db.data.orders[orderIndex].status;
+    const updatedOrder = {
+      ...db.data.orders[orderIndex],
+      status: status || prevStatus,
+      notes: notes !== undefined ? notes : db.data.orders[orderIndex].notes,
+      updated_at: new Date().toISOString()
+    };
 
-  db.data.orders[orderIndex] = updatedOrder;
+    db.data.orders[orderIndex] = updatedOrder;
 
-  // If order was cancelled, restore variant stock
-  if (status === 'CANCELLED' && prevStatus !== 'CANCELLED') {
-    const items = db.data.order_items.filter(i => i.order_id === updatedOrder.id);
-    for (const item of items) {
-      const vIndex = db.data.product_variants.findIndex(v => v.id === item.variant_id);
-      if (vIndex > -1) {
-        db.data.product_variants[vIndex].stock += item.quantity;
+    // If order was cancelled, restore variant stock
+    if (status === 'CANCELLED' && prevStatus !== 'CANCELLED') {
+      const items = (db.data?.order_items || []).filter(i => i.order_id === updatedOrder.id);
+      for (const item of items) {
+        const vIndex = (db.data?.product_variants || []).findIndex(v => v.id === item.variant_id);
+        if (vIndex > -1) {
+          db.data.product_variants[vIndex].stock += item.quantity;
+        }
       }
     }
+
+    // Generate Payment QR Bot Payload if confirmed or requested
+    const botPayload = formatAIPaymentBotMessage(
+      updatedOrder.order_number,
+      updatedOrder.customer_name,
+      updatedOrder.grand_total
+    );
+
+    const cleanPhone = updatedOrder.customer_phone.replace(/[^0-9]/g, '');
+    const botWhatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(botPayload.message)}`;
+
+    // Push notification to customer with QR Code link
+    if (!db.data.notifications) db.data.notifications = [];
+    db.data.notifications.push({
+      id: `notif-${Date.now()}`,
+      user_id: updatedOrder.user_id,
+      title: status === 'ORDER_CONFIRMED' ? `Order Confirmed: ${updatedOrder.order_number}` : `Order Update: ${updatedOrder.order_number}`,
+      message: status === 'ORDER_CONFIRMED' 
+        ? `Your order #${updatedOrder.order_number} is confirmed! Payment QR Code: ${botPayload.qr_code_url}`
+        : `Your order status has been updated to: ${status.replace('_', ' ')}`,
+      type: 'ORDER',
+      is_read: false,
+      created_at: new Date().toISOString()
+    });
+
+    db.save();
+    res.json({
+      success: true,
+      message: 'Order status updated successfully',
+      order: updatedOrder,
+      whatsapp_bot_url: botWhatsappUrl,
+      qr_code_url: botPayload.qr_code_url,
+      upi_uri: botPayload.upi_uri,
+      whatsapp_message: botPayload.message
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Failed to update order status' });
   }
-
-  // Generate Payment QR Bot Payload if confirmed or requested
-  const botPayload = formatAIPaymentBotMessage(
-    updatedOrder.order_number,
-    updatedOrder.customer_name,
-    updatedOrder.grand_total
-  );
-
-  const cleanPhone = updatedOrder.customer_phone.replace(/[^0-9]/g, '');
-  const botWhatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(botPayload.message)}`;
-
-  // Push notification to customer with QR Code link
-  db.data.notifications.push({
-    id: `notif-${Date.now()}`,
-    user_id: updatedOrder.user_id,
-    title: status === 'ORDER_CONFIRMED' ? `Order Confirmed: ${updatedOrder.order_number}` : `Order Update: ${updatedOrder.order_number}`,
-    message: status === 'ORDER_CONFIRMED' 
-      ? `Your order #${updatedOrder.order_number} is confirmed! Payment QR Code: ${botPayload.qr_code_url}`
-      : `Your order status has been updated to: ${status.replace('_', ' ')}`,
-    type: 'ORDER',
-    is_read: false,
-    created_at: new Date().toISOString()
-  });
-
-  db.save();
-  res.json({
-    message: 'Order status updated successfully',
-    order: updatedOrder,
-    whatsapp_bot_url: botWhatsappUrl,
-    qr_code_url: botPayload.qr_code_url,
-    upi_uri: botPayload.upi_uri,
-    whatsapp_message: botPayload.message
-  });
 });
 
 export default router;

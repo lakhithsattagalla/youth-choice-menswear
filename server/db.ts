@@ -1,8 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
-import initialDbData from '../youth_choice_db.json';
+import { createRequire } from 'module';
 
+const require = createRequire(import.meta.url);
 const DB_FILE = path.resolve(process.cwd(), 'youth_choice_db.json');
 
 export interface User {
@@ -288,11 +289,18 @@ export function loadDatabase() {
   }
 
   if (!loaded) {
-    if (initialDbData && typeof initialDbData === 'object' && Array.isArray((initialDbData as any).users)) {
-      dbData = JSON.parse(JSON.stringify(initialDbData));
-      console.log('Database loaded from static initial JSON fallback');
-      loaded = true;
-    } else {
+    try {
+      const initialDbData = require('../youth_choice_db.json');
+      if (initialDbData && typeof initialDbData === 'object' && Array.isArray((initialDbData as any).users)) {
+        dbData = JSON.parse(JSON.stringify(initialDbData));
+        console.log('Database loaded from initial JSON fallback');
+        loaded = true;
+      }
+    } catch (e) {
+      console.warn('Initial JSON require fallback failed:', e);
+    }
+
+    if (!loaded) {
       seedDatabase();
     }
   }

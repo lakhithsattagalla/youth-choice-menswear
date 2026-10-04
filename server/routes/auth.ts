@@ -726,7 +726,7 @@ router.post('/admin-login', (req: AuthRequest, res: Response) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({ error: 'Admin credentials required' });
+      return res.status(400).json({ success: false, message: 'Admin email/phone and password are required.' });
     }
 
     const rawInput = String(email).trim().toLowerCase();
@@ -734,20 +734,23 @@ router.post('/admin-login', (req: AuthRequest, res: Response) => {
 
     const lockCheck = checkAccountLockout(rawInput);
     if (lockCheck.isLocked) {
-      return res.status(429).json({ error: 'Admin account locked due to failed attempts. Try again in 15 minutes.' });
+      return res.status(429).json({ success: false, message: `Admin account locked due to failed attempts. Try again in ${lockCheck.remainingLockSeconds} seconds.` });
     }
 
     if (!db.data.users || db.data.users.length === 0) {
       db.init();
     }
 
-    let user = db.data.users.find(u => {
+    // Step 1: Look up user by email or phone
+    let user = (db.data?.users || []).find(u => {
       const uEmail = (u.email || '').trim().toLowerCase();
-      const uPhone = (u.phone || '').replace(/[^0-9]/g, '');
-      const matchesId = uEmail === rawInput || (digitsInput.length >= 8 && uPhone.includes(digitsInput));
-      return matchesId && u.role === 'ADMIN';
+      const uPhoneDigits = (u.phone || '').replace(/[^0-9]/g, '');
+      const matchesEmail = uEmail === rawInput;
+      const matchesPhone = digitsInput.length >= 8 && (uPhoneDigits.includes(digitsInput) || digitsInput.includes(uPhoneDigits));
+      return matchesEmail || matchesPhone;
     });
 
+    // Step 2: Fallback creation if default admin user is missing
     if (!user && (rawInput === 'youthchoicemenswear@gmail.com' || digitsInput.includes('8522000504'))) {
       user = {
         id: 'user-admin-1',
@@ -759,14 +762,17 @@ router.post('/admin-login', (req: AuthRequest, res: Response) => {
         gender: 'MALE',
         created_at: new Date().toISOString()
       };
+      if (!db.data.users) db.data.users = [];
       db.data.users.unshift(user);
     }
 
+    // Step 3: Handle user not found (401)
     if (!user) {
       recordFailedLogin(rawInput, req.ip || '', req.headers['user-agent'] || '');
-      return res.status(401).json({ error: 'Invalid admin credentials' });
+      return res.status(401).json({ success: false, message: 'Invalid admin email/phone or password.' });
     }
 
+    // Step 4: Password verification
     let isMatch = false;
     try {
       isMatch = bcrypt.compareSync(password, user.password_hash);
@@ -780,12 +786,23 @@ router.post('/admin-login', (req: AuthRequest, res: Response) => {
 
     if (!isMatch) {
       recordFailedLogin(user.email, req.ip || '', req.headers['user-agent'] || '');
-      return res.status(401).json({ error: 'Invalid admin credentials' });
+      return res.status(401).json({ success: false, message: 'Invalid admin email/phone or password.' });
     }
 
+    // Step 5: Admin role authorization check (403 if customer)
+    if (user.role !== 'ADMIN') {
+      logSecurityEvent('UNAUTHORIZED_ACCESS', user.email, req.ip || '', req.headers['user-agent'] || '', 'Non-admin user attempted admin login');
+      return res.status(403).json({ success: false, message: 'Administrator access required.' });
+    }
+
+    // Step 6: Clear lockout and issue JWT session token
     clearFailedLogin(user.email);
     const jti = generateJti();
-    const token = jwt.sign({ id: user.id, email: user.email, role: 'ADMIN', name: user.name, jti }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: 'ADMIN', name: user.name, jti },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
 
     const userData = {
       id: user.id,
@@ -796,10 +813,17 @@ router.post('/admin-login', (req: AuthRequest, res: Response) => {
     };
 
     logSecurityEvent('LOGIN_SUCCESS', user.email, req.ip || '', req.headers['user-agent'] || '', 'Admin login successful');
-    return res.json({ token, user: userData });
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      sameSite: 'lax'
+    });
+
+    return res.json({ success: true, token, user: userData, message: 'Admin login successful' });
   } catch (err: any) {
     console.error('Admin Login Error:', err);
-    return res.status(500).json({ error: 'Admin login failed: ' + (err.message || 'Server error') });
+    return res.status(500).json({ success: false, message: 'Admin login failed: ' + (err.message || 'Server error') });
   }
 });
 

@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import bcrypt from 'bcryptjs';
+import initialDbData from '../youth_choice_db.json';
 
 const DB_FILE = path.resolve(process.cwd(), 'youth_choice_db.json');
 
@@ -247,20 +248,28 @@ let dbData: DatabaseSchema = {
 };
 
 export function saveDatabase() {
-  try {
-    fs.writeFileSync(DB_FILE, JSON.stringify(dbData, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Error saving database file:', err);
+  const targetPaths = [
+    DB_FILE,
+    path.resolve(process.cwd(), 'youth_choice_db.json'),
+    '/tmp/youth_choice_db.json'
+  ];
+
+  for (const p of targetPaths) {
+    try {
+      fs.writeFileSync(p, JSON.stringify(dbData, null, 2), 'utf-8');
+      break;
+    } catch (err) {
+      // Continue to next fallback path (e.g. /tmp for serverless Vercel environment)
+    }
   }
 }
 
 export function loadDatabase() {
   const possiblePaths = [
+    '/tmp/youth_choice_db.json',
     DB_FILE,
     path.resolve(process.cwd(), 'youth_choice_db.json'),
-    path.resolve(__dirname, '../youth_choice_db.json'),
-    path.resolve(__dirname, '../../youth_choice_db.json'),
-    '/tmp/youth_choice_db.json'
+    path.resolve(process.cwd(), '../youth_choice_db.json')
   ];
 
   let loaded = false;
@@ -279,7 +288,13 @@ export function loadDatabase() {
   }
 
   if (!loaded) {
-    seedDatabase();
+    if (initialDbData && typeof initialDbData === 'object' && Array.isArray((initialDbData as any).users)) {
+      dbData = JSON.parse(JSON.stringify(initialDbData));
+      console.log('Database loaded from static initial JSON fallback');
+      loaded = true;
+    } else {
+      seedDatabase();
+    }
   }
 
   // Ensure Admin User ALWAYS exists in database

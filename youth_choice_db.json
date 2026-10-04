@@ -370,29 +370,6 @@
   ],
   "products": [
     {
-      "id": "prod-2",
-      "name": "Classic Pique Cotton Slim Polo T-Shirt",
-      "slug": "classic-pique-cotton-slim-polo-t-shirt",
-      "brand_id": "brand-allen-solly",
-      "category_id": "cat-men-tshirts",
-      "gender": "MEN",
-      "description": "Timeless short-sleeve polo shirt with ribbed collar, 2-button placket, and embroidered chest emblem.",
-      "material": "95% Pique Cotton, 5% Elastane",
-      "fit": "Slim Fit",
-      "care_instructions": "Warm machine wash with like colors.",
-      "mrp": 1799,
-      "selling_price": 1299,
-      "discount_pct": 28,
-      "sku_prefix": "YCMC-POLO-02",
-      "rating": 4.6,
-      "review_count": 28,
-      "is_featured": true,
-      "is_trending": true,
-      "is_new_arrival": false,
-      "status": "ACTIVE",
-      "created_at": "2026-09-21T12:42:13.910Z"
-    },
-    {
       "id": "prod-3",
       "name": "511 Slim Fit Tapered Stretch Denim Jeans",
       "slug": "511-slim-fit-tapered-stretch-denim-jeans",
@@ -625,22 +602,6 @@
   ],
   "product_images": [
     {
-      "id": "img-prod-2-0",
-      "product_id": "prod-2",
-      "image_url": "https://images.unsplash.com/photo-1586363104862-3a5e2ab60d99?w=800&auto=format&fit=crop&q=80",
-      "color": "Olive",
-      "is_primary": true,
-      "display_order": 1
-    },
-    {
-      "id": "img-prod-2-1",
-      "product_id": "prod-2",
-      "image_url": "https://images.unsplash.com/photo-1625910513413-56360c78f142?w=800&auto=format&fit=crop&q=80",
-      "color": "Beige",
-      "is_primary": false,
-      "display_order": 2
-    },
-    {
       "id": "img-prod-3-0",
       "product_id": "prod-3",
       "image_url": "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=800&auto=format&fit=crop&q=80",
@@ -762,60 +723,6 @@
     }
   ],
   "product_variants": [
-    {
-      "id": "var-prod-2-Olive-M",
-      "product_id": "prod-2",
-      "color": "Olive",
-      "size": "M",
-      "sku": "YCMC-POLO-02-OL-M",
-      "stock": 14,
-      "created_at": "2026-09-21T12:42:13.910Z"
-    },
-    {
-      "id": "var-prod-2-Olive-L",
-      "product_id": "prod-2",
-      "color": "Olive",
-      "size": "L",
-      "sku": "YCMC-POLO-02-OL-L",
-      "stock": 13,
-      "created_at": "2026-09-21T12:42:13.910Z"
-    },
-    {
-      "id": "var-prod-2-Olive-XL",
-      "product_id": "prod-2",
-      "color": "Olive",
-      "size": "XL",
-      "sku": "YCMC-POLO-02-OL-XL",
-      "stock": 15,
-      "created_at": "2026-09-21T12:42:13.910Z"
-    },
-    {
-      "id": "var-prod-2-Beige-M",
-      "product_id": "prod-2",
-      "color": "Beige",
-      "size": "M",
-      "sku": "YCMC-POLO-02-BE-M",
-      "stock": 15,
-      "created_at": "2026-09-21T12:42:13.910Z"
-    },
-    {
-      "id": "var-prod-2-Beige-L",
-      "product_id": "prod-2",
-      "color": "Beige",
-      "size": "L",
-      "sku": "YCMC-POLO-02-BE-L",
-      "stock": 15,
-      "created_at": "2026-09-21T12:42:13.910Z"
-    },
-    {
-      "id": "var-prod-2-Beige-XL",
-      "product_id": "prod-2",
-      "color": "Beige",
-      "size": "XL",
-      "sku": "YCMC-POLO-02-BE-XL",
-      "stock": 15,
-      "created_at": "2026-09-21T12:42:13.910Z"
-    },
     {
       "id": "var-prod-3-Charcoal-S",
       "product_id": "prod-3",

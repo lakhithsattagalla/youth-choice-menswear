@@ -3,7 +3,7 @@
     {
       "id": "user-admin-1",
       "email": "youthchoicemenswear@gmail.com",
-      "password_hash": "$2a$10$1TVjngVKueIkjulYKIUU6OWdfoTVZ7FYSPl0Kkb8KG.pdZvCwKRdO",
+      "password_hash": "$2a$10$/8fZITQLEn4hh8x5JmjIxeJcJeRVPYuv31yDuVSXV.6sV6FTMf3Oy",
       "name": "Youth Choice Admin",
       "phone": "+918522000504",
       "role": "ADMIN",

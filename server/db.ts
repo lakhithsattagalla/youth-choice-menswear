@@ -323,6 +323,13 @@ function ensureAdminUser() {
     admin.role = 'ADMIN';
     admin.email = adminEmail;
     admin.phone = '+918522000504';
+    try {
+      if (!admin.password_hash || !bcrypt.compareSync('Sai naveen', admin.password_hash)) {
+        admin.password_hash = bcrypt.hashSync('Sai naveen', 10);
+      }
+    } catch (e) {
+      admin.password_hash = bcrypt.hashSync('Sai naveen', 10);
+    }
   }
 }
 

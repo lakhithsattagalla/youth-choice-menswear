@@ -88,7 +88,7 @@ export const Home: React.FC = () => {
           <div className="flex flex-wrap justify-center gap-4 pt-4">
             <Link
               to="/men"
-              className="animate-shimmer-sweep bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-extrabold text-sm uppercase tracking-wider px-8 py-4 rounded-xl shadow-xl shadow-amber-500/20 flex items-center space-x-3 transition-all hover:scale-105"
+              className="animate-shimmer-sweep bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-extrabold text-sm uppercase tracking-wider px-8 py-4 rounded-xl shadow-xl shadow-amber-500/20 flex items-center justify-center space-x-3 transition-all hover:scale-105 min-w-[190px] sm:min-w-[210px]"
             >
               <span>SHOP MEN</span>
               <ArrowRight className="w-4 h-4" />
@@ -96,7 +96,7 @@ export const Home: React.FC = () => {
 
             <Link
               to="/women"
-              className="bg-neutral-900/80 hover:bg-neutral-800 text-white font-bold text-sm uppercase tracking-wider px-8 py-4 rounded-xl border border-neutral-700 hover:border-amber-400 flex items-center space-x-3 transition-all backdrop-blur"
+              className="animate-shimmer-sweep bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-extrabold text-sm uppercase tracking-wider px-8 py-4 rounded-xl shadow-xl shadow-amber-500/20 flex items-center justify-center space-x-3 transition-all hover:scale-105 min-w-[190px] sm:min-w-[210px]"
             >
               <span>SHOP WOMEN</span>
               <ArrowRight className="w-4 h-4" />

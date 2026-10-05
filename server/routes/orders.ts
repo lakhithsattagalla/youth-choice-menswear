@@ -1,5 +1,6 @@
 import { Router, Response } from 'express';
 import { db } from '../db.js';
+import { calculateCouponStatus } from '../services/couponHelper.js';
 import { authenticateToken, requireAdmin, AuthRequest } from '../middleware/auth.js';
 import { formatAIPaymentBotMessage } from './whatsappBot.js';
 
@@ -79,15 +80,32 @@ router.post('/checkout', authenticateToken, (req: AuthRequest, res: Response) =>
     // Coupon Calculation
     let discount = 0;
     if (coupon_code) {
-      const coupon = db.data.coupons.find(c => c.code.toUpperCase() === coupon_code.toUpperCase() && c.status === 'ACTIVE');
-      if (coupon && subtotal >= coupon.min_order_amount) {
-        if (coupon.discount_type === 'FIXED') {
-          discount = coupon.discount_value;
-        } else {
-          discount = Math.round((subtotal * coupon.discount_value) / 100);
-        }
-        coupon.usage_count += 1;
+      const coupon = (db.data?.coupons || []).find(c => c.code.toUpperCase() === String(coupon_code).toUpperCase());
+      if (!coupon) {
+        return res.status(400).json({ success: false, message: 'Invalid coupon code.' });
       }
+
+      const now = new Date();
+      const status = calculateCouponStatus(coupon, now);
+
+      if (status === 'SCHEDULED') {
+        return res.status(400).json({ success: false, message: 'This coupon is not active yet.' });
+      }
+
+      if (status === 'EXPIRED') {
+        return res.status(400).json({ success: false, message: 'This coupon expired before your order was completed.' });
+      }
+
+      if (subtotal < coupon.min_order_amount) {
+        return res.status(400).json({ success: false, message: `Minimum order amount for coupon ${coupon.code} is ₹${coupon.min_order_amount}` });
+      }
+
+      if (coupon.discount_type === 'FIXED') {
+        discount = coupon.discount_value;
+      } else {
+        discount = Math.round((subtotal * coupon.discount_value) / 100);
+      }
+      coupon.usage_count = (coupon.usage_count || 0) + 1;
     }
 
     const deliveryFee = subtotal >= 999 ? 0 : 99;

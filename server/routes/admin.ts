@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { db } from '../db.js';
+import { calculateCouponStatus } from '../services/couponHelper.js';
 import { authenticateToken, requireAdmin, AuthRequest } from '../middleware/auth.js';
 import { checkAccountLockout, recordFailedLogin, clearFailedLogin, logSecurityEvent } from '../services/security.js';
 
@@ -267,9 +268,16 @@ router.get('/customers', authenticateToken, requireAdmin, (req: AuthRequest, res
 });
 
 // Coupons Management CRUD
-router.get('/coupons', authenticateToken, requireAdmin, (req: AuthRequest, res: Response) => {
+// Coupons Management CRUD
+router.get('/coupons', (req: AuthRequest, res: Response) => {
   try {
-    res.json({ success: true, coupons: db.data?.coupons || [] });
+    const rawCoupons = db.data?.coupons || [];
+    const now = new Date();
+    const couponsWithStatus = rawCoupons.map(c => ({
+      ...c,
+      status: calculateCouponStatus(c, now)
+    }));
+    res.json({ success: true, coupons: couponsWithStatus });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message || 'Failed to fetch coupons' });
   }
@@ -277,16 +285,40 @@ router.get('/coupons', authenticateToken, requireAdmin, (req: AuthRequest, res: 
 
 router.post('/coupons', authenticateToken, requireAdmin, (req: AuthRequest, res: Response) => {
   try {
-    const { code, discount_type, discount_value, min_order_amount } = req.body;
-    if (!code || !discount_value) return res.status(400).json({ success: false, message: 'Code and discount value required' });
+    const { code, discount_type, discount_value, min_order_amount, start_at, end_at } = req.body;
+    
+    if (!code || discount_value === undefined || !start_at || !end_at) {
+      return res.status(400).json({
+        success: false,
+        message: 'Coupon code, discount value, start date/time, and end date/time are required.'
+      });
+    }
+
+    const startMs = new Date(start_at).getTime();
+    const endMs = new Date(end_at).getTime();
+
+    if (isNaN(startMs) || isNaN(endMs)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid start or end date and time.'
+      });
+    }
+
+    if (endMs <= startMs) {
+      return res.status(400).json({
+        success: false,
+        message: 'End date and time must be after the start date and time.'
+      });
+    }
 
     const newCoupon = {
       id: `cpn-${Date.now()}`,
-      code: code.toUpperCase(),
+      code: String(code).toUpperCase().trim(),
       discount_type: discount_type || 'FIXED',
       discount_value: Number(discount_value),
       min_order_amount: Number(min_order_amount || 0),
-      status: 'ACTIVE' as const,
+      start_at: new Date(start_at).toISOString(),
+      end_at: new Date(end_at).toISOString(),
       usage_count: 0,
       created_at: new Date().toISOString()
     };
@@ -294,9 +326,59 @@ router.post('/coupons', authenticateToken, requireAdmin, (req: AuthRequest, res:
     if (!db.data.coupons) db.data.coupons = [];
     db.data.coupons.push(newCoupon);
     db.save();
-    res.status(201).json({ success: true, coupon: newCoupon });
+
+    const status = calculateCouponStatus(newCoupon);
+    res.status(201).json({ success: true, coupon: { ...newCoupon, status } });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message || 'Failed to create coupon' });
+  }
+});
+
+router.put('/coupons/:id', authenticateToken, requireAdmin, (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { code, discount_type, discount_value, min_order_amount, start_at, end_at, is_active } = req.body;
+
+    const idx = (db.data?.coupons || []).findIndex(c => c.id === id);
+    if (idx === -1) {
+      return res.status(404).json({ success: false, message: 'Coupon not found' });
+    }
+
+    if (start_at && end_at) {
+      const startMs = new Date(start_at).getTime();
+      const endMs = new Date(end_at).getTime();
+
+      if (isNaN(startMs) || isNaN(endMs)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid start or end date and time.'
+        });
+      }
+
+      if (endMs <= startMs) {
+        return res.status(400).json({
+          success: false,
+          message: 'End date and time must be after the start date and time.'
+        });
+      }
+
+      db.data.coupons[idx].start_at = new Date(start_at).toISOString();
+      db.data.coupons[idx].end_at = new Date(end_at).toISOString();
+    }
+
+    if (code) db.data.coupons[idx].code = String(code).toUpperCase().trim();
+    if (discount_type) db.data.coupons[idx].discount_type = discount_type;
+    if (discount_value !== undefined) db.data.coupons[idx].discount_value = Number(discount_value);
+    if (min_order_amount !== undefined) db.data.coupons[idx].min_order_amount = Number(min_order_amount);
+    if (is_active !== undefined) db.data.coupons[idx].is_active = Boolean(is_active);
+
+    db.save();
+
+    const updatedCoupon = db.data.coupons[idx];
+    const status = calculateCouponStatus(updatedCoupon);
+    return res.json({ success: true, coupon: { ...updatedCoupon, status } });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Failed to update coupon' });
   }
 });
 
@@ -309,7 +391,8 @@ router.put('/coupons/:id/status', authenticateToken, requireAdmin, (req: AuthReq
     if (idx > -1) {
       db.data.coupons[idx].status = status;
       db.save();
-      return res.json({ success: true, coupon: db.data.coupons[idx] });
+      const updatedCoupon = db.data.coupons[idx];
+      return res.json({ success: true, coupon: { ...updatedCoupon, status: calculateCouponStatus(updatedCoupon) } });
     }
     res.status(404).json({ success: false, message: 'Coupon not found' });
   } catch (err: any) {

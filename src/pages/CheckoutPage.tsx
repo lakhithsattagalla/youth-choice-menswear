@@ -71,12 +71,27 @@ export const CheckoutPage: React.FC = () => {
 
     try {
       const res = await apiRequest('/admin/coupons');
-      const found = (res.coupons || []).find((c: any) => c.code.toUpperCase() === couponCode.toUpperCase() && c.status === 'ACTIVE');
+      const found = (res.coupons || []).find((c: any) => c.code.toUpperCase() === couponCode.trim().toUpperCase());
       if (!found) {
-        setCouponError('Invalid or expired coupon code');
+        setCouponError('Invalid coupon code');
         return;
       }
 
+      const nowMs = Date.now();
+
+      // 1. Check if before start time
+      if (found.start_at && nowMs < new Date(found.start_at).getTime()) {
+        setCouponError('This coupon is not active yet.');
+        return;
+      }
+
+      // 2. Check if after end time or status expired
+      if ((found.end_at && nowMs > new Date(found.end_at).getTime()) || found.status === 'EXPIRED') {
+        setCouponError('This coupon has expired.');
+        return;
+      }
+
+      // 3. Check minimum order requirement
       if (summary.subtotal < found.min_order_amount) {
         setCouponError(`Minimum order amount for coupon ${found.code} is ₹${found.min_order_amount}`);
         return;

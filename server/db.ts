@@ -173,7 +173,10 @@ export interface Coupon {
   discount_type: 'PERCENT' | 'FIXED';
   discount_value: number;
   min_order_amount: number;
-  status: 'ACTIVE' | 'INACTIVE';
+  start_at: string;
+  end_at: string;
+  status?: 'SCHEDULED' | 'ACTIVE' | 'EXPIRED';
+  is_active?: boolean;
   usage_count: number;
   created_at: string;
 }
@@ -307,6 +310,18 @@ export function loadDatabase() {
 
   // Ensure Admin User ALWAYS exists in database
   ensureAdminUser();
+  ensureCouponFields();
+}
+
+function ensureCouponFields() {
+  if (!dbData.coupons) dbData.coupons = [];
+  const pastDefault = '2026-09-01T00:00:00.000+05:30';
+  const futureDefault = '2026-12-31T23:59:59.000+05:30';
+
+  dbData.coupons.forEach(c => {
+    if (!c.start_at) c.start_at = pastDefault;
+    if (!c.end_at) c.end_at = futureDefault;
+  });
 }
 
 function ensureAdminUser() {
@@ -892,8 +907,8 @@ export function seedDatabase() {
 
   // 9. Coupons
   dbData.coupons = [
-    { id: 'cpn-1', code: 'WELCOME100', discount_type: 'FIXED', discount_value: 100, min_order_amount: 999, status: 'ACTIVE', usage_count: 14, created_at: now },
-    { id: 'cpn-2', code: 'YOUTH20', discount_type: 'PERCENT', discount_value: 20, min_order_amount: 1999, status: 'ACTIVE', usage_count: 38, created_at: now }
+    { id: 'cpn-1', code: 'WELCOME100', discount_type: 'FIXED', discount_value: 100, min_order_amount: 999, start_at: '2026-09-01T00:00:00.000+05:30', end_at: '2026-12-31T23:59:59.000+05:30', status: 'ACTIVE', usage_count: 14, created_at: now },
+    { id: 'cpn-2', code: 'YOUTH20', discount_type: 'PERCENT', discount_value: 20, min_order_amount: 1999, start_at: '2026-09-01T00:00:00.000+05:30', end_at: '2026-12-31T23:59:59.000+05:30', status: 'ACTIVE', usage_count: 38, created_at: now }
   ];
 
   // 10. Offers

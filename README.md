@@ -1,4 +1,4 @@
-# Youth Choice Mens & Womens Wear
+# Youth Choice The Fashion Store
 
 > **Define Your Style. Wear Your Confidence.**
 

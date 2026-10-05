@@ -137,7 +137,7 @@ export const CheckoutPage: React.FC = () => {
       <div className="max-w-md mx-auto my-20 text-center space-y-4">
         <h2 className="text-xl font-bold text-white">Your cart is empty</h2>
         <button onClick={() => navigate('/products')} className="bg-amber-500 text-black font-bold text-xs px-6 py-3 rounded-xl uppercase">
-          Shop Mens Wear
+          Shop Now
         </button>
       </div>
     );
@@ -163,7 +163,7 @@ export const CheckoutPage: React.FC = () => {
             <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest">ORDER CREATED SUCCESSFULLY</span>
             <h2 className="text-2xl font-display font-bold text-white uppercase">Order ID: {orderSuccess.order.order_number}</h2>
             <p className="text-xs text-slate-300">
-              Your order has been recorded in our system. Click the button below to send your order details directly to the Youth Choice Mens Wear store owner via WhatsApp!
+              Your order has been recorded in our system. Click the button below to send your order details directly to the Youth Choice The Fashion Store owner via WhatsApp!
             </p>
           </div>
 

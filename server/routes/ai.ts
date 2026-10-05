@@ -4,7 +4,7 @@ import { db } from '../db.js';
 const router = Router();
 
 // Store details for AI context
-const STORE_NAME = process.env.STORE_NAME || 'Youth Choice Mens Wear';
+const STORE_NAME = process.env.STORE_NAME || 'Youth Choice The Fashion Store';
 const WHATSAPP_PHONE = process.env.WHATSAPP_PHONE_NUMBER || '918522000504';
 
 interface ChatMessage {

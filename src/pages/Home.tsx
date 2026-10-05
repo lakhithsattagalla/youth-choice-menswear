@@ -57,7 +57,7 @@ export const Home: React.FC = () => {
         <div className="absolute inset-0 z-0">
           <img
             src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1600&auto=format&fit=crop&q=80"
-            alt="Youth Choice Mens Wear Hero"
+            alt="Youth Choice The Fashion Store Hero"
             className="w-full h-full object-cover object-center scale-105 filter brightness-50"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0c] via-black/60 to-transparent" />
@@ -411,7 +411,7 @@ export const Home: React.FC = () => {
 
           <div>
             <a
-              href="https://wa.me/918522000504?text=Hello%20Youth%20Choice%20Mens%20Wear!%20I%20would%20like%20to%20inquire%20about%20your%20latest%20menswear%20collection."
+              href="https://wa.me/918522000504?text=Hello%20Youth%20Choice%20The%20Fashion%20Store!%20I%20would%20like%20to%20inquire%20about%20your%20latest%20fashion%20collection."
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center space-x-3 bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-sm uppercase tracking-wider px-8 py-4 rounded-xl shadow-xl shadow-emerald-500/20 transition-all hover:scale-105"

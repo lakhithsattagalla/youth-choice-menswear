@@ -63,12 +63,12 @@ export const Footer: React.FC = () => {
             />
             <div>
               <span className="font-display font-extrabold text-white text-lg tracking-wider block">YOUTH CHOICE</span>
-              <span className="text-[10px] tracking-[0.25em] text-amber-400 font-semibold uppercase block">MENS WEAR</span>
+              <span className="text-[10px] tracking-[0.2em] text-amber-400 font-semibold uppercase block">THE FASHION STORE</span>
             </div>
           </div>
           <p className="text-xs text-slate-400 leading-relaxed max-w-sm">
             “Define Your Style. Wear Your Confidence.” <br />
-            Youth Choice Mens Wear brings you contemporary menswear and women’s fashion crafted for timeless elegance, everyday comfort, and high-impact style.
+            Youth Choice The Fashion Store brings you contemporary menswear and women’s fashion crafted for timeless elegance, everyday comfort, and high-impact style.
           </p>
         </div>
 
@@ -104,7 +104,7 @@ export const Footer: React.FC = () => {
             <li className="flex items-start space-x-3">
               <MapPin className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
               <div>
-                <span>Youth Choice Mens Wear, Shasam Complex, Kosgi, Telangana - 509339</span>
+                <span>Youth Choice The Fashion Store, Shasam Complex, Kosgi, Telangana - 509339</span>
                 <a 
                   href="https://maps.app.goo.gl/nbaJPKgVFzTCNaRF6" 
                   target="_blank" 
@@ -128,7 +128,7 @@ export const Footer: React.FC = () => {
 
       {/* Bottom Legal Copyright */}
       <div className="border-t border-neutral-900 py-6 text-center text-xs text-slate-500">
-        <p>© {new Date().getFullYear()} Youth Choice Mens Wear. All rights reserved. Designed for Premium Fashion Commerce.</p>
+        <p>© {new Date().getFullYear()} Youth Choice The Fashion Store. All rights reserved. Designed for Premium Fashion Commerce.</p>
       </div>
     </footer>
   );

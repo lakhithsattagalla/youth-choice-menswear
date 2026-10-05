@@ -50,7 +50,7 @@ export const RegisterPage: React.FC = () => {
             className="w-16 h-16 rounded-2xl object-contain bg-white p-1 mx-auto shadow-lg shadow-amber-500/20" 
           />
           <h1 className="text-2xl font-display font-extrabold text-white uppercase">Create Account</h1>
-          <p className="text-xs text-slate-400">Join Youth Choice Mens Wear for exclusive drops & order tracking.</p>
+          <p className="text-xs text-slate-400">Join Youth Choice The Fashion Store for exclusive drops &amp; order tracking.</p>
         </div>
 
         {error && (

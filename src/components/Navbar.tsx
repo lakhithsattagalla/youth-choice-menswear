@@ -100,8 +100,8 @@ export const Navbar: React.FC = () => {
               <span className="font-display font-extrabold tracking-wider text-lg sm:text-xl text-white block leading-none">
                 YOUTH CHOICE
               </span>
-              <span className="text-[10px] tracking-[0.25em] text-amber-400 font-medium block uppercase mt-0.5">
-                MENS WEAR
+              <span className="text-[9px] sm:text-[10px] tracking-[0.2em] text-amber-400 font-medium block uppercase mt-0.5">
+                THE FASHION STORE
               </span>
             </div>
           </Link>

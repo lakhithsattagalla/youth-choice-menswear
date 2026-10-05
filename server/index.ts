@@ -59,7 +59,7 @@ const apiRouter = express.Router();
 apiRouter.get('/health', (req, res) => {
   res.json({
     status: 'OK',
-    store: 'Youth Choice Mens Wear',
+    store: 'Youth Choice The Fashion Store',
     tagline: 'Define Your Style. Wear Your Confidence.',
     timestamp: new Date().toISOString()
   });
@@ -107,7 +107,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`====================================================`);
-    console.log(`🚀 Youth Choice Mens Wear Server running on port ${PORT}`);
+    console.log(`🚀 Youth Choice The Fashion Store Server running on port ${PORT}`);
     console.log(`🌐 Health check: http://localhost:${PORT}/api/health`);
     console.log(`====================================================`);
   });

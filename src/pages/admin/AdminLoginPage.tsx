@@ -38,7 +38,7 @@ export const AdminLoginPage: React.FC = () => {
             className="w-16 h-16 rounded-2xl object-contain bg-white p-1 mx-auto shadow-lg shadow-amber-500/20" 
           />
           <h1 className="text-2xl font-display font-extrabold text-white uppercase tracking-wider">Admin Portal Login</h1>
-          <p className="text-xs text-amber-400 font-medium">Youth Choice Mens Wear • Executive Dashboard</p>
+          <p className="text-xs text-amber-400 font-medium">Youth Choice The Fashion Store • Executive Dashboard</p>
         </div>
 
         {error && (

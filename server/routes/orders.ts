@@ -5,7 +5,7 @@ import { formatAIPaymentBotMessage } from './whatsappBot.js';
 
 const router = Router();
 const WHATSAPP_PHONE = process.env.WHATSAPP_PHONE_NUMBER || '918522000504';
-const STORE_NAME = process.env.STORE_NAME || 'Youth Choice Mens Wear';
+const STORE_NAME = process.env.STORE_NAME || 'Youth Choice The Fashion Store';
 
 // Create New Order & Generate WhatsApp Message
 router.post('/checkout', authenticateToken, (req: AuthRequest, res: Response) => {

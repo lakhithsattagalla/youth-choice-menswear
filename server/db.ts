@@ -342,7 +342,7 @@ function ensureAdminUser() {
 }
 
 export function seedDatabase() {
-  console.log('Seeding initial Youth Choice Mens Wear database...');
+  console.log('Seeding initial Youth Choice The Fashion Store database...');
   const passwordHashAdmin = bcrypt.hashSync('Sai naveen', 10);
   const passwordHashUser = bcrypt.hashSync('customer123', 10);
 
@@ -867,7 +867,7 @@ export function seedDatabase() {
       delivery_fee: 0,
       grand_total: 2698,
       status: 'ORDER_CONFIRMED',
-      whatsapp_message: 'Hello Youth Choice Mens Wear!\nI would like to place an order.\nOrder ID: YC-10245...',
+      whatsapp_message: 'Hello Youth Choice The Fashion Store!\nI would like to place an order.\nOrder ID: YC-10245...',
       created_at: now,
       updated_at: now
     }

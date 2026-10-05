@@ -53,7 +53,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               <h3 className="text-lg font-display font-extrabold uppercase text-white tracking-wide leading-tight">
                 Sign In to Account
               </h3>
-              <p className="text-[11px] text-slate-400">Youth Choice Mens Wear</p>
+              <p className="text-[11px] text-slate-400">Youth Choice The Fashion Store</p>
             </div>
           </div>
           <button 

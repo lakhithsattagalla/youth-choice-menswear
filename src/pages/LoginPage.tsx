@@ -40,7 +40,7 @@ export const LoginPage: React.FC = () => {
             className="w-16 h-16 rounded-2xl object-contain bg-white p-1 mx-auto shadow-lg shadow-amber-500/20" 
           />
           <h1 className="text-2xl font-display font-extrabold text-white uppercase">Customer Login</h1>
-          <p className="text-xs text-slate-400">Access your personal Youth Choice Mens Wear account.</p>
+          <p className="text-xs text-slate-400">Access your personal Youth Choice The Fashion Store account.</p>
         </div>
 
         {error && (

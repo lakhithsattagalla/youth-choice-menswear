@@ -286,19 +286,22 @@ export function saveDatabase() {
 
   for (const p of targetPaths) {
     try {
+      const dir = path.dirname(p);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
       fs.writeFileSync(p, JSON.stringify(dbData, null, 2), 'utf-8');
-      break;
     } catch (err) {
-      // Continue to next fallback path (e.g. /tmp for serverless Vercel environment)
+      // Ignore fallback write errors
     }
   }
 }
 
 export function loadDatabase() {
   const possiblePaths = [
-    '/tmp/youth_choice_db.json',
     DB_FILE,
     path.resolve(process.cwd(), 'youth_choice_db.json'),
+    '/tmp/youth_choice_db.json',
     path.resolve(process.cwd(), '../youth_choice_db.json')
   ];
 
@@ -307,10 +310,13 @@ export function loadDatabase() {
     if (fs.existsSync(dbPath)) {
       try {
         const data = fs.readFileSync(dbPath, 'utf-8');
-        dbData = JSON.parse(data);
-        console.log('Database loaded successfully from:', dbPath);
-        loaded = true;
-        break;
+        const parsed = JSON.parse(data);
+        if (parsed && typeof parsed === 'object' && Array.isArray(parsed.products)) {
+          dbData = parsed;
+          console.log('Database loaded successfully from:', dbPath);
+          loaded = true;
+          break;
+        }
       } catch (e) {
         console.error('Failed to parse database JSON at:', dbPath);
       }
@@ -339,6 +345,58 @@ export function loadDatabase() {
   ensureCouponFields();
   ensureOfferFields();
 }
+
+export function deleteProductFromDb(productId: string): boolean {
+  const targetId = String(productId).trim();
+
+  dbData.products = (dbData.products || []).filter(
+    p => String(p.id).trim() !== targetId && String(p.slug).trim() !== targetId
+  );
+
+  // Clean up product images
+  dbData.product_images = (dbData.product_images || []).filter(
+    img => String(img.product_id).trim() !== targetId
+  );
+
+  // Clean up product variants
+  const removedVariantIds = new Set(
+    (dbData.product_variants || [])
+      .filter(v => String(v.product_id).trim() === targetId)
+      .map(v => String(v.id))
+  );
+
+  dbData.product_variants = (dbData.product_variants || []).filter(
+    v => String(v.product_id).trim() !== targetId
+  );
+
+  // Clean up cart items
+  dbData.cart_items = (dbData.cart_items || []).filter(c => {
+    return !removedVariantIds.has(String(c.variant_id));
+  });
+
+  // Clean up wishlist items
+  dbData.wishlist_items = (dbData.wishlist_items || []).filter(
+    w => String(w.product_id).trim() !== targetId
+  );
+
+  // Clean up offers items
+  if (Array.isArray(dbData.offers)) {
+    dbData.offers.forEach((o: any) => {
+      if (Array.isArray(o.items)) {
+        o.items = o.items.filter((item: any) => String(item.product_id).trim() !== targetId);
+      }
+    });
+  }
+
+  // Clean up reviews
+  dbData.reviews = (dbData.reviews || []).filter(
+    r => String(r.product_id).trim() !== targetId
+  );
+
+  saveDatabase();
+  return true;
+}
+
 
 function ensureOfferFields() {
   if (!dbData.offers) dbData.offers = [];

@@ -1,12 +1,19 @@
 import { Router, Response } from 'express';
-import { db } from '../db.js';
+import { db, deleteProductFromDb } from '../db.js';
+import {
+  isSupabaseConfigured,
+  fetchProductsFromSupabase,
+  deleteProductFromSupabase,
+  createProductInSupabase,
+  updateProductInSupabase
+} from '../services/supabaseService.js';
 import { getProductEffectivePrice } from '../services/couponHelper.js';
 import { authenticateToken, requireAdmin, AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
 
 // Get all products with advanced filtering, search, and sorting
-router.get('/', (req: AuthRequest, res: Response) => {
+router.get('/', async (req: AuthRequest, res: Response) => {
   try {
     let {
       gender,
@@ -25,7 +32,18 @@ router.get('/', (req: AuthRequest, res: Response) => {
       isNewArrival
     } = req.query as Record<string, string>;
 
-    let products = (db.data?.products || []).filter(p => p.status === 'ACTIVE');
+    let products: any[] = [];
+    if (isSupabaseConfigured()) {
+      try {
+        const sbProds = await fetchProductsFromSupabase();
+        if (sbProds) products = sbProds;
+      } catch (err) {
+        console.warn('[Supabase fetch error, fallback to local DB]:', err);
+        products = (db.data?.products || []).filter(p => p.status === 'ACTIVE');
+      }
+    } else {
+      products = (db.data?.products || []).filter(p => p.status === 'ACTIVE');
+    }
 
     // Gender Filter
     if (gender && gender !== 'ALL') {
@@ -204,7 +222,7 @@ router.get('/:id', (req: AuthRequest, res: Response) => {
 });
 
 // Admin: Add New Product
-router.post('/', authenticateToken, requireAdmin, (req: AuthRequest, res: Response) => {
+router.post('/', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const {
       name,
@@ -224,6 +242,14 @@ router.post('/', authenticateToken, requireAdmin, (req: AuthRequest, res: Respon
 
     if (!name || !brand_id || !category_id || !mrp || !selling_price || !sku_prefix) {
       return res.status(400).json({ success: false, message: 'Missing required product fields' });
+    }
+
+    if (isSupabaseConfigured()) {
+      try {
+        await createProductInSupabase(req.body);
+      } catch (sbErr) {
+        console.warn('[Supabase create product failed, falling back to persistent DB]:', sbErr);
+      }
     }
 
     const prodId = `prod-${Date.now()}`;
@@ -265,7 +291,7 @@ router.post('/', authenticateToken, requireAdmin, (req: AuthRequest, res: Respon
         db.data.product_images.push({
           id: `img-${prodId}-${idx}`,
           product_id: prodId,
-          image_url: img.url,
+          image_url: typeof img === 'string' ? img : img.url,
           color: img.color || '',
           is_primary: idx === 0 || img.is_primary,
           display_order: idx
@@ -298,136 +324,158 @@ router.post('/', authenticateToken, requireAdmin, (req: AuthRequest, res: Respon
 });
 
 // Admin: Edit Product & Update Details / Variants
-router.put('/:id', authenticateToken, requireAdmin, (req: AuthRequest, res: Response) => {
+router.put('/:id', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const prodIndex = (db.data?.products || []).findIndex(p => p.id === id);
+    const targetId = String(id).trim();
 
-    if (prodIndex === -1) {
+    if (isSupabaseConfigured()) {
+      try {
+        await updateProductInSupabase(targetId, req.body);
+      } catch (sbErr) {
+        console.warn('[Supabase update product failed, falling back to persistent DB]:', sbErr);
+      }
+    }
+
+    const prodIndex = (db.data?.products || []).findIndex(p => String(p.id).trim() === targetId || String(p.slug).trim() === targetId);
+
+    if (prodIndex === -1 && !isSupabaseConfigured()) {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
 
-    const current = db.data.products[prodIndex];
-    const {
-      name,
-      brand_id,
-      category_id,
-      gender,
-      description,
-      material,
-      fit,
-      care_instructions,
-      mrp,
-      selling_price,
-      sku_prefix,
-      status,
-      images,
-      variants
-    } = req.body;
+    if (prodIndex !== -1) {
+      const current = db.data.products[prodIndex];
+      const {
+        name,
+        brand_id,
+        category_id,
+        gender,
+        description,
+        material,
+        fit,
+        care_instructions,
+        mrp,
+        selling_price,
+        sku_prefix,
+        status,
+        images,
+        variants
+      } = req.body;
 
-    const newMrp = mrp !== undefined ? Number(mrp) : current.mrp;
-    const newSelling = selling_price !== undefined ? Number(selling_price) : current.selling_price;
-    const discount_pct = Math.round(((newMrp - newSelling) / newMrp) * 100);
-    const newName = name || current.name;
-    const slug = newName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+      const newMrp = mrp !== undefined ? Number(mrp) : current.mrp;
+      const newSelling = selling_price !== undefined ? Number(selling_price) : current.selling_price;
+      const discount_pct = Math.round(((newMrp - newSelling) / newMrp) * 100);
+      const newName = name || current.name;
+      const slug = newName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
 
-    const updated = {
-      ...current,
-      name: newName,
-      slug,
-      brand_id: brand_id || current.brand_id,
-      category_id: category_id || current.category_id,
-      gender: gender || current.gender,
-      description: description !== undefined ? description : current.description,
-      material: material !== undefined ? material : current.material,
-      fit: fit !== undefined ? fit : current.fit,
-      care_instructions: care_instructions !== undefined ? care_instructions : current.care_instructions,
-      sku_prefix: sku_prefix || current.sku_prefix,
-      status: status || current.status,
-      mrp: newMrp,
-      selling_price: newSelling,
-      discount_pct
-    };
+      const updated = {
+        ...current,
+        name: newName,
+        slug,
+        brand_id: brand_id || current.brand_id,
+        category_id: category_id || current.category_id,
+        gender: gender || current.gender,
+        description: description !== undefined ? description : current.description,
+        material: material !== undefined ? material : current.material,
+        fit: fit !== undefined ? fit : current.fit,
+        care_instructions: care_instructions !== undefined ? care_instructions : current.care_instructions,
+        sku_prefix: sku_prefix || current.sku_prefix,
+        status: status || current.status,
+        mrp: newMrp,
+        selling_price: newSelling,
+        discount_pct
+      };
 
-    db.data.products[prodIndex] = updated;
+      db.data.products[prodIndex] = updated;
 
-    // Handle Images update if provided
-    if (Array.isArray(images) && images.length > 0) {
-      db.data.product_images = (db.data?.product_images || []).filter(img => img.product_id !== id);
+      if (Array.isArray(images) && images.length > 0) {
+        db.data.product_images = (db.data?.product_images || []).filter(img => String(img.product_id).trim() !== targetId);
 
-      images.forEach((img: any, idx: number) => {
-        db.data.product_images.push({
-          id: `img-${id}-${idx}-${Date.now()}`,
-          product_id: id,
-          image_url: typeof img === 'string' ? img : img.url,
-          color: img.color || '',
-          is_primary: idx === 0 || img.is_primary,
-          display_order: idx
-        });
-      });
-    }
-
-    // Handle Variants update if provided
-    if (Array.isArray(variants)) {
-      const existingVariants = (db.data?.product_variants || []).filter(v => v.product_id === id);
-      const updatedVariantIds = new Set<string>();
-
-      variants.forEach((v: any) => {
-        const variantSku = v.sku || `${updated.sku_prefix}-${(v.color || 'CLR').substring(0, 2).toUpperCase()}-${v.size}`;
-        const match = existingVariants.find(ex => ex.color.toLowerCase() === v.color.toLowerCase() && ex.size.toUpperCase() === v.size.toUpperCase());
-
-        if (match) {
-          match.color = v.color;
-          match.size = v.size;
-          match.sku = variantSku;
-          if (v.stock !== undefined) match.stock = Number(v.stock);
-          updatedVariantIds.add(match.id);
-        } else {
-          const newVarId = `var-${id}-${v.color}-${v.size}-${Date.now()}`;
-          db.data.product_variants.push({
-            id: newVarId,
-            product_id: id,
-            color: v.color,
-            size: v.size,
-            sku: variantSku,
-            stock: Number(v.stock || 0),
-            created_at: new Date().toISOString()
+        images.forEach((img: any, idx: number) => {
+          db.data.product_images.push({
+            id: `img-${targetId}-${idx}-${Date.now()}`,
+            product_id: targetId,
+            image_url: typeof img === 'string' ? img : img.url,
+            color: img.color || '',
+            is_primary: idx === 0 || img.is_primary,
+            display_order: idx
           });
-          updatedVariantIds.add(newVarId);
-        }
-      });
+        });
+      }
 
-      // Remove variants that were removed by admin
-      db.data.product_variants = (db.data?.product_variants || []).filter(v => v.product_id !== id || updatedVariantIds.has(v.id));
+      if (Array.isArray(variants)) {
+        const existingVariants = (db.data?.product_variants || []).filter(v => String(v.product_id).trim() === targetId);
+        const updatedVariantIds = new Set<string>();
+
+        variants.forEach((v: any) => {
+          const variantSku = v.sku || `${updated.sku_prefix}-${(v.color || 'CLR').substring(0, 2).toUpperCase()}-${v.size}`;
+          const match = existingVariants.find(ex => ex.color.toLowerCase() === v.color.toLowerCase() && ex.size.toUpperCase() === v.size.toUpperCase());
+
+          if (match) {
+            match.color = v.color;
+            match.size = v.size;
+            match.sku = variantSku;
+            if (v.stock !== undefined) match.stock = Number(v.stock);
+            updatedVariantIds.add(match.id);
+          } else {
+            const newVarId = `var-${targetId}-${v.color}-${v.size}-${Date.now()}`;
+            db.data.product_variants.push({
+              id: newVarId,
+              product_id: targetId,
+              color: v.color,
+              size: v.size,
+              sku: variantSku,
+              stock: Number(v.stock || 0),
+              created_at: new Date().toISOString()
+            });
+            updatedVariantIds.add(newVarId);
+          }
+        });
+
+        db.data.product_variants = (db.data?.product_variants || []).filter(v => String(v.product_id).trim() !== targetId || updatedVariantIds.has(v.id));
+      }
+
+      db.save();
     }
 
-    db.save();
-
-    res.json({ success: true, message: 'Product updated successfully', product: updated });
+    res.json({ success: true, message: 'Product updated successfully', id: targetId });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message || 'Failed to update product' });
   }
 });
 
 // Admin: Delete Product
-router.delete('/:id', authenticateToken, requireAdmin, (req: AuthRequest, res: Response) => {
+router.delete('/:id', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
+    if (!id || typeof id !== 'string') {
+      return res.status(400).json({ success: false, message: 'Invalid or missing product ID' });
+    }
     const targetId = String(id).trim();
 
-    db.data.products = (db.data?.products || []).filter(p => String(p.id).trim() !== targetId && String(p.slug).trim() !== targetId);
-    db.data.product_images = (db.data?.product_images || []).filter(img => String(img.product_id).trim() !== targetId);
-    db.data.product_variants = (db.data?.product_variants || []).filter(v => String(v.product_id).trim() !== targetId);
-    db.data.cart_items = (db.data?.cart_items || []).filter(c => {
-      const variant = (db.data?.product_variants || []).find(v => String(v.id) === String(c.variant_id));
-      return variant && String(variant.product_id).trim() !== targetId;
-    });
+    if (isSupabaseConfigured()) {
+      try {
+        await deleteProductFromSupabase(targetId);
+      } catch (sbErr: any) {
+        console.error('[Supabase Delete Failed]:', sbErr);
+      }
+    }
 
-    db.save();
-    res.json({ success: true, message: 'Product deleted successfully', id: targetId });
+    deleteProductFromDb(targetId);
+
+    res.json({
+      success: true,
+      message: 'Product deleted successfully',
+      id: targetId
+    });
   } catch (err: any) {
-    res.status(500).json({ success: false, message: err.message || 'Failed to delete product' });
+    console.error('[Delete Product Error]:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Unable to delete product. Please try again.'
+    });
   }
 });
 
 export default router;
+

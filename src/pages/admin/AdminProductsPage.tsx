@@ -47,6 +47,7 @@ export const AdminProductsPage: React.FC = () => {
   const [showAddModal, setShowAddModal] = useState<boolean>(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [deletingProduct, setDeletingProduct] = useState<any>(null);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
   // Custom color input states
   const [customAddColorInput, setCustomAddColorInput] = useState<string>('');
@@ -327,16 +328,25 @@ export const AdminProductsPage: React.FC = () => {
   };
 
   const confirmDelete = async () => {
-    if (!deletingProduct) return;
+    if (!deletingProduct || isDeleting) return;
     const targetId = deletingProduct.id;
     try {
-      setProducts(prev => prev.filter(p => p.id !== targetId));
-      setDeletingProduct(null);
-      await apiRequest(`/products/${targetId}`, { method: 'DELETE' });
-      await fetchCatalog();
+      setIsDeleting(true);
+      const res = await apiRequest(`/products/${targetId}`, { method: 'DELETE' });
+
+      if (res && res.success) {
+        setProducts(prev => prev.filter(p => p.id !== targetId));
+        setDeletingProduct(null);
+        await fetchCatalog();
+        alert('Product deleted successfully.');
+      } else {
+        throw new Error(res?.message || 'Unable to delete product. Please try again.');
+      }
     } catch (err: any) {
-      alert(err.message || 'Failed to delete product');
-      await fetchCatalog();
+      console.error('[Delete Product Failed]:', err);
+      alert(err.message || 'Unable to delete product. Please try again.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -894,16 +904,18 @@ export const AdminProductsPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setDeletingProduct(null)}
-                className="px-5 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-slate-300 font-bold rounded-xl text-xs"
+                disabled={isDeleting}
+                className="px-5 py-2.5 bg-neutral-800 hover:bg-neutral-700 text-slate-300 font-bold rounded-xl text-xs disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={confirmDelete}
-                className="px-6 py-2.5 bg-red-600 hover:bg-red-500 text-white font-extrabold rounded-xl text-xs uppercase shadow-lg shadow-red-600/30 transition-all hover:scale-105"
+                disabled={isDeleting}
+                className="px-6 py-2.5 bg-red-600 hover:bg-red-500 text-white font-extrabold rounded-xl text-xs uppercase shadow-lg shadow-red-600/30 transition-all hover:scale-105 disabled:opacity-50"
               >
-                🗑️ Yes, Delete Product
+                {isDeleting ? 'Deleting...' : '🗑️ Yes, Delete Product'}
               </button>
             </div>
           </div>

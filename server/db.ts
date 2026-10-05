@@ -173,23 +173,48 @@ export interface Coupon {
   discount_type: 'PERCENT' | 'FIXED';
   discount_value: number;
   min_order_amount: number;
+  max_discount_amount?: number;
   start_at: string;
   end_at: string;
-  status?: 'SCHEDULED' | 'ACTIVE' | 'EXPIRED';
+  status?: 'SCHEDULED' | 'ACTIVE' | 'EXPIRED' | 'INACTIVE';
   is_active?: boolean;
+  total_usage_limit?: number;
+  per_customer_limit?: number;
+  first_order_only?: boolean;
+  applicable_products?: string[];
+  applicable_categories?: string[];
+  applicable_brands?: string[];
   usage_count: number;
   created_at: string;
 }
 
+export interface OfferItem {
+  id: string;
+  offer_id: string;
+  product_id: string;
+  discount_type: 'PERCENT' | 'FIXED';
+  discount_value: number;
+}
+
 export interface Offer {
   id: string;
-  title: string;
-  subtitle: string;
-  banner_url: string;
-  discount_tag: string;
-  link_url: string;
-  status: 'ACTIVE' | 'INACTIVE';
+  name: string;
+  title?: string;
+  subtitle?: string;
+  banner_url?: string;
+  discount_tag?: string;
+  link_url?: string;
+  allow_coupon_with_offer?: boolean;
+  start_at: string;
+  end_at: string;
+  is_active: boolean;
+  status?: 'SCHEDULED' | 'ACTIVE' | 'EXPIRED' | 'INACTIVE';
+  items: OfferItem[];
+  views_count?: number;
+  orders_count?: number;
+  total_revenue?: number;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface Notification {
@@ -311,6 +336,30 @@ export function loadDatabase() {
   // Ensure Admin User ALWAYS exists in database
   ensureAdminUser();
   ensureCouponFields();
+  ensureOfferFields();
+}
+
+function ensureOfferFields() {
+  if (!dbData.offers) dbData.offers = [];
+  const pastDefault = '2026-09-01T00:00:00.000+05:30';
+  const futureDefault = '2026-12-31T23:59:59.000+05:30';
+
+  dbData.offers.forEach((o: any) => {
+    if (!o.name) o.name = o.title || 'Special Promotion';
+    if (!o.start_at) o.start_at = pastDefault;
+    if (!o.end_at) o.end_at = futureDefault;
+    if (o.is_active === undefined) o.is_active = o.status !== 'INACTIVE';
+    if (!o.items) {
+      const sampleProds = (dbData.products || []).slice(0, 3).map(p => ({
+        id: `off-item-${Date.now()}-${p.id}`,
+        offer_id: o.id,
+        product_id: p.id,
+        discount_type: 'PERCENT' as const,
+        discount_value: 20
+      }));
+      o.items = sampleProds;
+    }
+  });
 }
 
 function ensureCouponFields() {

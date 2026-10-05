@@ -1,8 +1,9 @@
 /**
- * Coupon Helpers & Timezone Utilities (Asia/Kolkata)
+ * Coupon & Product Offer Helpers & Timezone Utilities (Asia/Kolkata)
  */
 
-export type CouponStatus = 'SCHEDULED' | 'ACTIVE' | 'EXPIRED';
+export type CouponStatus = 'SCHEDULED' | 'ACTIVE' | 'EXPIRED' | 'INACTIVE';
+export type OfferStatus = 'SCHEDULED' | 'ACTIVE' | 'EXPIRED' | 'INACTIVE';
 
 export interface CouponItem {
   id: string;
@@ -10,19 +11,55 @@ export interface CouponItem {
   discount_type: 'PERCENT' | 'FIXED';
   discount_value: number;
   min_order_amount: number;
+  max_discount_amount?: number;
   start_at?: string;
   end_at?: string;
   status?: CouponStatus;
   usage_count?: number;
+  total_usage_limit?: number;
+  per_customer_limit?: number;
+  first_order_only?: boolean;
+  applicable_products?: string[];
+  applicable_categories?: string[];
+  applicable_brands?: string[];
   is_active?: boolean;
   created_at?: string;
 }
 
+export interface OfferProductItem {
+  id?: string;
+  offer_id?: string;
+  product_id: string;
+  discount_type: 'PERCENT' | 'FIXED';
+  discount_value: number;
+}
+
+export interface ProductOffer {
+  id: string;
+  name: string;
+  title?: string;
+  subtitle?: string;
+  banner_url?: string;
+  discount_tag?: string;
+  link_url?: string;
+  allow_coupon_with_offer?: boolean;
+  start_at: string;
+  end_at: string;
+  is_active: boolean;
+  status?: OfferStatus;
+  items: OfferProductItem[];
+  views_count?: number;
+  orders_count?: number;
+  total_revenue?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 /**
- * Calculates dynamic time-based coupon status based on store timezone (Asia/Kolkata)
+ * Dynamic status calculation based on store timezone (Asia/Kolkata)
  */
 export function calculateCouponStatus(coupon: { start_at?: string; end_at?: string; is_active?: boolean }, now: Date = new Date()): CouponStatus {
-  if (coupon.is_active === false) return 'EXPIRED';
+  if (coupon.is_active === false) return 'INACTIVE';
   const nowMs = now.getTime();
 
   if (coupon.start_at) {
@@ -32,6 +69,23 @@ export function calculateCouponStatus(coupon: { start_at?: string; end_at?: stri
 
   if (coupon.end_at) {
     const endMs = new Date(coupon.end_at).getTime();
+    if (nowMs > endMs) return 'EXPIRED';
+  }
+
+  return 'ACTIVE';
+}
+
+export function calculateOfferStatus(offer: { start_at?: string; end_at?: string; is_active?: boolean }, now: Date = new Date()): OfferStatus {
+  if (offer.is_active === false) return 'INACTIVE';
+  const nowMs = now.getTime();
+
+  if (offer.start_at) {
+    const startMs = new Date(offer.start_at).getTime();
+    if (nowMs < startMs) return 'SCHEDULED';
+  }
+
+  if (offer.end_at) {
+    const endMs = new Date(offer.end_at).getTime();
     if (nowMs > endMs) return 'EXPIRED';
   }
 
@@ -57,7 +111,6 @@ export function formatKolkataDateTime(dateInput: string | Date | undefined): { d
       hour12: true
     });
 
-    // Formats for HTML input elements: YYYY-MM-DD and HH:mm in Asia/Kolkata
     const parts = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'Asia/Kolkata',
       year: 'numeric',
@@ -91,7 +144,6 @@ export function formatKolkataDateTime(dateInput: string | Date | undefined): { d
  */
 export function combineDateAndTimeToIso(dateStr: string, timeStr: string): string {
   if (!dateStr || !timeStr) return '';
-  // Construct ISO string with +05:30 offset for Asia/Kolkata
   const formattedInput = `${dateStr}T${timeStr}:00+05:30`;
   const d = new Date(formattedInput);
   return d.toISOString();
@@ -100,10 +152,12 @@ export function combineDateAndTimeToIso(dateStr: string, timeStr: string): strin
 /**
  * Informational countdown relative time label for Admin interface
  */
-export function getRelativeTimeLabel(coupon: { start_at?: string; end_at?: string }, now: Date = new Date()): string {
-  const status = calculateCouponStatus(coupon, now);
-  if (status === 'SCHEDULED' && coupon.start_at) {
-    const diffMs = new Date(coupon.start_at).getTime() - now.getTime();
+export function getRelativeTimeLabel(item: { start_at?: string; end_at?: string; is_active?: boolean }, now: Date = new Date()): string {
+  const status = calculateCouponStatus(item, now);
+  if (status === 'INACTIVE') return 'Inactive';
+  
+  if (status === 'SCHEDULED' && item.start_at) {
+    const diffMs = new Date(item.start_at).getTime() - now.getTime();
     if (diffMs <= 0) return 'Starts now';
     const hours = Math.floor(diffMs / (1000 * 60 * 60));
     if (hours < 1) {
@@ -117,8 +171,8 @@ export function getRelativeTimeLabel(coupon: { start_at?: string; end_at?: strin
     return `Starts in ${days} day${days > 1 ? 's' : ''}`;
   }
 
-  if (status === 'ACTIVE' && coupon.end_at) {
-    const diffMs = new Date(coupon.end_at).getTime() - now.getTime();
+  if (status === 'ACTIVE' && item.end_at) {
+    const diffMs = new Date(item.end_at).getTime() - now.getTime();
     if (diffMs <= 0) return 'Ending now';
     const hours = Math.floor(diffMs / (1000 * 60 * 60));
     if (hours < 1) {

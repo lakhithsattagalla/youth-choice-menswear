@@ -1,5 +1,6 @@
 import { Router, Response } from 'express';
 import { db } from '../db.js';
+import { getProductEffectivePrice } from '../services/couponHelper.js';
 import { authenticateToken, requireAdmin, AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
@@ -112,6 +113,10 @@ router.get('/', (req: AuthRequest, res: Response) => {
 
       const totalStock = variants.reduce((sum, v) => sum + v.stock, 0);
 
+      const offers = db.data?.offers || [];
+      const now = new Date();
+      const pricing = getProductEffectivePrice(p, offers, now);
+
       return {
         ...p,
         brand_name: brandObj?.name || 'Brand',
@@ -119,7 +124,17 @@ router.get('/', (req: AuthRequest, res: Response) => {
         images,
         variants,
         total_stock: totalStock,
-        primary_image: images.find(img => img.is_primary)?.image_url || images[0]?.image_url || ''
+        primary_image: images.find(img => img.is_primary)?.image_url || images[0]?.image_url || '',
+        mrp: pricing.mrp,
+        price: pricing.offerPrice,
+        original_price: pricing.mrp,
+        offer_price: pricing.offerPrice,
+        has_offer: pricing.hasOffer,
+        offer_name: pricing.offerName,
+        offer_id: pricing.offerId,
+        discount_percentage: pricing.discountPercentage,
+        allow_coupon: pricing.allowCoupon,
+        offer_end_at: pricing.endAt
       };
     });
 
@@ -145,6 +160,10 @@ router.get('/:id', (req: AuthRequest, res: Response) => {
     const variants = (db.data?.product_variants || []).filter(v => v.product_id === product.id);
     const reviews = (db.data?.reviews || []).filter(r => r.product_id === product.id);
 
+    const offers = db.data?.offers || [];
+    const now = new Date();
+    const pricing = getProductEffectivePrice(product, offers, now);
+
     // Track analytics event
     if (!db.data.analytics_events) db.data.analytics_events = [];
     db.data.analytics_events.push({
@@ -166,7 +185,17 @@ router.get('/:id', (req: AuthRequest, res: Response) => {
         category: catObj,
         images,
         variants,
-        reviews
+        reviews,
+        mrp: pricing.mrp,
+        price: pricing.offerPrice,
+        original_price: pricing.mrp,
+        offer_price: pricing.offerPrice,
+        has_offer: pricing.hasOffer,
+        offer_name: pricing.offerName,
+        offer_id: pricing.offerId,
+        discount_percentage: pricing.discountPercentage,
+        allow_coupon: pricing.allowCoupon,
+        offer_end_at: pricing.endAt
       }
     });
   } catch (err: any) {

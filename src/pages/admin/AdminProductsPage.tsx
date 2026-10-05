@@ -443,9 +443,17 @@ export const AdminProductsPage: React.FC = () => {
                       </div>
                     </td>
                     <td className="py-3 px-4">
-                      <p className="font-extrabold text-white">₹{product.selling_price?.toLocaleString()}</p>
-                      <p className="text-[10px] text-slate-500 line-through">₹{product.mrp?.toLocaleString()}</p>
-                      <span className="text-[10px] text-emerald-400 font-bold">{product.discount_pct}% OFF</span>
+                      <p className="font-extrabold text-white">₹{(product.price ?? product.selling_price)?.toLocaleString()}</p>
+                      {(product.original_price ?? product.mrp) > (product.price ?? product.selling_price) && (
+                        <p className="text-[10px] text-slate-400 line-through">₹{(product.original_price ?? product.mrp)?.toLocaleString()}</p>
+                      )}
+                      {product.has_offer ? (
+                        <span className="text-[10px] text-amber-400 font-extrabold bg-amber-500/10 border border-amber-500/30 px-1.5 py-0.5 rounded block w-max mt-0.5">
+                          🔥 {product.offer_name || 'Active Offer'} ({product.discount_percentage}% OFF)
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-emerald-400 font-bold">{product.discount_pct || 0}% OFF</span>
+                      )}
                     </td>
                     <td className="py-3 px-4 font-extrabold text-white">{product.total_stock || 0} Units</td>
                     <td className="py-3 px-4">
@@ -457,6 +465,14 @@ export const AdminProductsPage: React.FC = () => {
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                           <span className="text-[11px] font-bold hidden sm:inline">Edit</span>
+                        </button>
+                        <button 
+                          onClick={() => window.location.href = '/admin/offers'}
+                          className="bg-neutral-800 hover:bg-amber-500/20 text-amber-300 p-2 rounded-lg flex items-center space-x-1"
+                          title="Manage Product Offers"
+                        >
+                          <Tag className="w-3.5 h-3.5" />
+                          <span className="text-[11px] font-bold hidden sm:inline">Manage Offer</span>
                         </button>
                         <button 
                           onClick={() => setDeletingProduct(product)}

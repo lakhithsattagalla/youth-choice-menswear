@@ -337,7 +337,22 @@ router.post('/coupons', authenticateToken, requireAdmin, (req: AuthRequest, res:
 router.put('/coupons/:id', authenticateToken, requireAdmin, (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { code, discount_type, discount_value, min_order_amount, start_at, end_at, is_active } = req.body;
+    const {
+      code,
+      discount_type,
+      discount_value,
+      min_order_amount,
+      max_discount_amount,
+      start_at,
+      end_at,
+      total_usage_limit,
+      per_customer_limit,
+      first_order_only,
+      applicable_products,
+      applicable_categories,
+      applicable_brands,
+      is_active
+    } = req.body;
 
     const idx = (db.data?.coupons || []).findIndex(c => c.id === id);
     if (idx === -1) {
@@ -370,6 +385,13 @@ router.put('/coupons/:id', authenticateToken, requireAdmin, (req: AuthRequest, r
     if (discount_type) db.data.coupons[idx].discount_type = discount_type;
     if (discount_value !== undefined) db.data.coupons[idx].discount_value = Number(discount_value);
     if (min_order_amount !== undefined) db.data.coupons[idx].min_order_amount = Number(min_order_amount);
+    if (max_discount_amount !== undefined) db.data.coupons[idx].max_discount_amount = max_discount_amount ? Number(max_discount_amount) : undefined;
+    if (total_usage_limit !== undefined) db.data.coupons[idx].total_usage_limit = total_usage_limit ? Number(total_usage_limit) : undefined;
+    if (per_customer_limit !== undefined) db.data.coupons[idx].per_customer_limit = per_customer_limit ? Number(per_customer_limit) : undefined;
+    if (first_order_only !== undefined) db.data.coupons[idx].first_order_only = Boolean(first_order_only);
+    if (applicable_products !== undefined) db.data.coupons[idx].applicable_products = applicable_products;
+    if (applicable_categories !== undefined) db.data.coupons[idx].applicable_categories = applicable_categories;
+    if (applicable_brands !== undefined) db.data.coupons[idx].applicable_brands = applicable_brands;
     if (is_active !== undefined) db.data.coupons[idx].is_active = Boolean(is_active);
 
     db.save();
@@ -385,11 +407,11 @@ router.put('/coupons/:id', authenticateToken, requireAdmin, (req: AuthRequest, r
 router.put('/coupons/:id/status', authenticateToken, requireAdmin, (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, is_active } = req.body;
 
     const idx = (db.data?.coupons || []).findIndex(c => c.id === id);
     if (idx > -1) {
-      db.data.coupons[idx].status = status;
+      if (is_active !== undefined) db.data.coupons[idx].is_active = Boolean(is_active);
       db.save();
       const updatedCoupon = db.data.coupons[idx];
       return res.json({ success: true, coupon: { ...updatedCoupon, status: calculateCouponStatus(updatedCoupon) } });
@@ -411,10 +433,16 @@ router.delete('/coupons/:id', authenticateToken, requireAdmin, (req: AuthRequest
   }
 });
 
-// Offers Management CRUD
-router.get('/offers', authenticateToken, requireAdmin, (req: AuthRequest, res: Response) => {
+// Product Offers Management CRUD
+router.get('/offers', (req: AuthRequest, res: Response) => {
   try {
-    res.json({ success: true, offers: db.data?.offers || [] });
+    const rawOffers = db.data?.offers || [];
+    const now = new Date();
+    const offersWithStatus = rawOffers.map(o => ({
+      ...o,
+      status: calculateOfferStatus(o, now)
+    }));
+    res.json({ success: true, offers: offersWithStatus });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message || 'Failed to fetch offers' });
   }
@@ -422,26 +450,168 @@ router.get('/offers', authenticateToken, requireAdmin, (req: AuthRequest, res: R
 
 router.post('/offers', authenticateToken, requireAdmin, (req: AuthRequest, res: Response) => {
   try {
-    const { title, subtitle, banner_url, discount_tag, link_url } = req.body;
-    if (!title || !banner_url) return res.status(400).json({ success: false, message: 'Title and banner image required' });
+    const { name, title, subtitle, banner_url, discount_tag, link_url, allow_coupon_with_offer, start_at, end_at, items, is_active } = req.body;
+    
+    if (!name || !start_at || !end_at) {
+      return res.status(400).json({ success: false, message: 'Offer name, start date/time, and end date/time are required.' });
+    }
+
+    const startMs = new Date(start_at).getTime();
+    const endMs = new Date(end_at).getTime();
+
+    if (isNaN(startMs) || isNaN(endMs)) {
+      return res.status(400).json({ success: false, message: 'Invalid start or end date and time.' });
+    }
+
+    if (endMs <= startMs) {
+      return res.status(400).json({ success: false, message: 'End date and time must be after the start date and time.' });
+    }
+
+    const offerId = `off-${Date.now()}`;
+    const offerItems = (items || []).map((itm: any) => ({
+      id: `off-itm-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      offer_id: offerId,
+      product_id: itm.product_id,
+      discount_type: itm.discount_type || 'PERCENT',
+      discount_value: Number(itm.discount_value || 0)
+    }));
 
     const newOffer = {
-      id: `off-${Date.now()}`,
-      title,
+      id: offerId,
+      name: String(name).trim(),
+      title: title || name,
       subtitle: subtitle || '',
-      banner_url,
-      discount_tag: discount_tag || '',
+      banner_url: banner_url || 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=1200&auto=format&fit=crop&q=80',
+      discount_tag: discount_tag || 'SPECIAL OFFER',
       link_url: link_url || '/products',
-      status: 'ACTIVE' as const,
+      allow_coupon_with_offer: allow_coupon_with_offer !== undefined ? Boolean(allow_coupon_with_offer) : false,
+      start_at: new Date(start_at).toISOString(),
+      end_at: new Date(end_at).toISOString(),
+      is_active: is_active !== undefined ? Boolean(is_active) : true,
+      items: offerItems,
+      views_count: 0,
+      orders_count: 0,
+      total_revenue: 0,
       created_at: new Date().toISOString()
     };
 
     if (!db.data.offers) db.data.offers = [];
     db.data.offers.push(newOffer);
     db.save();
-    res.status(201).json({ success: true, offer: newOffer });
+
+    const status = calculateOfferStatus(newOffer);
+    res.status(201).json({ success: true, offer: { ...newOffer, status } });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message || 'Failed to create offer' });
+  }
+});
+
+router.put('/offers/:id', authenticateToken, requireAdmin, (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name, title, subtitle, banner_url, discount_tag, link_url, allow_coupon_with_offer, start_at, end_at, items, is_active } = req.body;
+
+    const idx = (db.data?.offers || []).findIndex(o => o.id === id);
+    if (idx === -1) {
+      return res.status(404).json({ success: false, message: 'Offer not found' });
+    }
+
+    if (start_at && end_at) {
+      const startMs = new Date(start_at).getTime();
+      const endMs = new Date(end_at).getTime();
+
+      if (isNaN(startMs) || isNaN(endMs)) {
+        return res.status(400).json({ success: false, message: 'Invalid start or end date and time.' });
+      }
+
+      if (endMs <= startMs) {
+        return res.status(400).json({ success: false, message: 'End date and time must be after the start date and time.' });
+      }
+
+      db.data.offers[idx].start_at = new Date(start_at).toISOString();
+      db.data.offers[idx].end_at = new Date(end_at).toISOString();
+    }
+
+    if (name) db.data.offers[idx].name = String(name).trim();
+    if (title) db.data.offers[idx].title = title;
+    if (subtitle !== undefined) db.data.offers[idx].subtitle = subtitle;
+    if (banner_url) db.data.offers[idx].banner_url = banner_url;
+    if (discount_tag !== undefined) db.data.offers[idx].discount_tag = discount_tag;
+    if (link_url !== undefined) db.data.offers[idx].link_url = link_url;
+    if (allow_coupon_with_offer !== undefined) db.data.offers[idx].allow_coupon_with_offer = Boolean(allow_coupon_with_offer);
+    if (is_active !== undefined) db.data.offers[idx].is_active = Boolean(is_active);
+
+    if (items && Array.isArray(items)) {
+      db.data.offers[idx].items = items.map((itm: any) => ({
+        id: itm.id || `off-itm-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        offer_id: id,
+        product_id: itm.product_id,
+        discount_type: itm.discount_type || 'PERCENT',
+        discount_value: Number(itm.discount_value || 0)
+      }));
+    }
+
+    db.data.offers[idx].updated_at = new Date().toISOString();
+    db.save();
+
+    const updatedOffer = db.data.offers[idx];
+    const status = calculateOfferStatus(updatedOffer);
+    return res.json({ success: true, offer: { ...updatedOffer, status } });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Failed to update offer' });
+  }
+});
+
+router.put('/offers/:id/status', authenticateToken, requireAdmin, (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { is_active } = req.body;
+
+    const idx = (db.data?.offers || []).findIndex(o => o.id === id);
+    if (idx > -1) {
+      if (is_active !== undefined) db.data.offers[idx].is_active = Boolean(is_active);
+      db.save();
+      const updatedOffer = db.data.offers[idx];
+      return res.json({ success: true, offer: { ...updatedOffer, status: calculateOfferStatus(updatedOffer) } });
+    }
+    res.status(404).json({ success: false, message: 'Offer not found' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Failed to update offer status' });
+  }
+});
+
+router.post('/offers/:id/duplicate', authenticateToken, requireAdmin, (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const existing = (db.data?.offers || []).find(o => o.id === id);
+    if (!existing) return res.status(404).json({ success: false, message: 'Offer not found' });
+
+    const newOfferId = `off-${Date.now()}`;
+    const duplicatedItems = (existing.items || []).map(itm => ({
+      ...itm,
+      id: `off-itm-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      offer_id: newOfferId
+    }));
+
+    const duplicatedOffer = {
+      ...existing,
+      id: newOfferId,
+      name: `${existing.name} (Copy)`,
+      title: `${existing.title || existing.name} (Copy)`,
+      items: duplicatedItems,
+      views_count: 0,
+      orders_count: 0,
+      total_revenue: 0,
+      created_at: new Date().toISOString()
+    };
+
+    if (!db.data.offers) db.data.offers = [];
+    db.data.offers.push(duplicatedOffer);
+    db.save();
+
+    res.status(201).json({ success: true, offer: { ...duplicatedOffer, status: calculateOfferStatus(duplicatedOffer) } });
+  } catch (err: any) {
+    res.status(500).json({ success: false, message: err.message || 'Failed to duplicate offer' });
   }
 });
 

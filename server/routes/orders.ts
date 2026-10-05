@@ -1,6 +1,6 @@
 import { Router, Response } from 'express';
 import { db } from '../db.js';
-import { calculateCouponStatus } from '../services/couponHelper.js';
+import { calculateCouponStatus, getProductEffectivePrice } from '../services/couponHelper.js';
 import { authenticateToken, requireAdmin, AuthRequest } from '../middleware/auth.js';
 import { formatAIPaymentBotMessage } from './whatsappBot.js';
 
@@ -52,7 +52,11 @@ router.post('/checkout', authenticateToken, (req: AuthRequest, res: Response) =>
       const images = db.data.product_images.filter(img => img.product_id === product.id);
       const imgUrl = images.find(img => img.color?.toLowerCase() === variant.color.toLowerCase())?.image_url || images[0]?.image_url || '';
 
-      const unitPrice = product.selling_price;
+      const offers = db.data?.offers || [];
+      const now = new Date();
+      const pricing = getProductEffectivePrice(product, offers, now);
+
+      const unitPrice = pricing.offerPrice;
       const itemTotal = unitPrice * item.quantity;
       subtotal += itemTotal;
 
@@ -68,8 +72,12 @@ router.post('/checkout', authenticateToken, (req: AuthRequest, res: Response) =>
         quantity: item.quantity,
         unit_price: unitPrice,
         total_price: itemTotal,
-        image_url: imgUrl
-      });
+        image_url: imgUrl,
+        original_price: pricing.mrp,
+        has_offer: pricing.hasOffer,
+        offer_id: pricing.offerId,
+        allow_coupon: pricing.allowCoupon
+      } as any);
 
       stockUpdates.push({
         variant_id: variant.id,
@@ -77,7 +85,7 @@ router.post('/checkout', authenticateToken, (req: AuthRequest, res: Response) =>
       });
     }
 
-    // Coupon Calculation
+    // Coupon Calculation & Validation
     let discount = 0;
     if (coupon_code) {
       const coupon = (db.data?.coupons || []).find(c => c.code.toUpperCase() === String(coupon_code).toUpperCase());
@@ -96,14 +104,45 @@ router.post('/checkout', authenticateToken, (req: AuthRequest, res: Response) =>
         return res.status(400).json({ success: false, message: 'This coupon expired before your order was completed.' });
       }
 
+      // Check Offer + Coupon Stacking Rule
+      const hasRestrictedOfferItem = orderItems.some((itm: any) => itm.has_offer && itm.allow_coupon === false);
+      if (hasRestrictedOfferItem) {
+        return res.status(400).json({ success: false, message: 'Coupon cannot be combined with this offer.' });
+      }
+
+      // Check Total Usage Limit
+      if (coupon.total_usage_limit && (coupon.usage_count || 0) >= coupon.total_usage_limit) {
+        return res.status(400).json({ success: false, message: 'This coupon has reached its maximum total usage limit.' });
+      }
+
+      // Check Customer Orders for Per-Customer Limit & First-Order-Only
+      const userId = req.user?.id;
+      const userOrders = userId ? (db.data?.orders || []).filter(o => o.user_id === userId) : [];
+
+      if (coupon.first_order_only && userOrders.length > 0) {
+        return res.status(400).json({ success: false, message: 'This coupon is valid for first-time orders only.' });
+      }
+
+      if (coupon.per_customer_limit && userId) {
+        const userCouponUsage = userOrders.filter(o => (o as any).coupon_code?.toUpperCase() === coupon.code.toUpperCase()).length;
+        if (userCouponUsage >= coupon.per_customer_limit) {
+          return res.status(400).json({ success: false, message: 'You have reached the maximum usage limit for this coupon.' });
+        }
+      }
+
+      // Minimum Order Amount Check
       if (subtotal < coupon.min_order_amount) {
         return res.status(400).json({ success: false, message: `Minimum order amount for coupon ${coupon.code} is ₹${coupon.min_order_amount}` });
       }
 
+      // Calculate Discount with Optional Max Capping
       if (coupon.discount_type === 'FIXED') {
         discount = coupon.discount_value;
       } else {
         discount = Math.round((subtotal * coupon.discount_value) / 100);
+        if (coupon.max_discount_amount && coupon.max_discount_amount > 0) {
+          discount = Math.min(discount, coupon.max_discount_amount);
+        }
       }
       coupon.usage_count = (coupon.usage_count || 0) + 1;
     }

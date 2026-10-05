@@ -11,17 +11,17 @@ export interface OfferItemData {
 
 export interface OfferData {
   id: string;
-  name: string;
+  name?: string;
   title?: string;
   subtitle?: string;
   banner_url?: string;
   discount_tag?: string;
   link_url?: string;
   allow_coupon_with_offer?: boolean;
-  start_at: string;
-  end_at: string;
-  is_active: boolean;
-  items: OfferItemData[];
+  start_at?: string;
+  end_at?: string;
+  is_active?: boolean;
+  items?: OfferItemData[];
   views_count?: number;
   orders_count?: number;
   total_revenue?: number;
@@ -92,8 +92,8 @@ export function calculateOfferStatus(offer: { start_at?: string; end_at?: string
 /**
  * Calculates effective product offer price for a product at a given server time
  */
-export function getProductEffectivePrice(product: { id: string; price: number }, offers: OfferData[], now: Date = new Date()) {
-  const mrp = Number(product.price || 0);
+export function getProductEffectivePrice(product: { id: string; price?: number; selling_price?: number; mrp?: number }, offers: OfferData[], now: Date = new Date()) {
+  const mrp = Number(product.price ?? product.selling_price ?? product.mrp ?? 0);
   let bestOfferPrice = mrp;
   let activeOffer: OfferData | null = null;
   let activeItem: OfferItemData | null = null;

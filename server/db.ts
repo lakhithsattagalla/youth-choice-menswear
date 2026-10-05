@@ -86,6 +86,7 @@ export interface Product {
   mrp: number;
   selling_price: number;
   discount_pct: number;
+  price?: number;
   sku_prefix: string;
   rating: number;
   review_count: number;
@@ -198,18 +199,18 @@ export interface OfferItem {
 
 export interface Offer {
   id: string;
-  name: string;
-  title?: string;
+  name?: string;
+  title: string;
   subtitle?: string;
   banner_url?: string;
   discount_tag?: string;
   link_url?: string;
   allow_coupon_with_offer?: boolean;
-  start_at: string;
-  end_at: string;
-  is_active: boolean;
+  start_at?: string;
+  end_at?: string;
+  is_active?: boolean;
   status?: 'SCHEDULED' | 'ACTIVE' | 'EXPIRED' | 'INACTIVE';
-  items: OfferItem[];
+  items?: OfferItem[];
   views_count?: number;
   orders_count?: number;
   total_revenue?: number;

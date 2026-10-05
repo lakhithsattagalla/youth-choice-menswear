@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { db } from '../db.js';
+import { isSupabaseConfigured, updateVariantStockInSupabase } from '../services/supabaseService.js';
 import { calculateCouponStatus, calculateOfferStatus } from '../services/couponHelper.js';
 import { authenticateToken, requireAdmin, AuthRequest } from '../middleware/auth.js';
 import { checkAccountLockout, recordFailedLogin, clearFailedLogin, logSecurityEvent } from '../services/security.js';
@@ -216,20 +217,27 @@ router.get('/inventory', authenticateToken, requireAdmin, (req: AuthRequest, res
 });
 
 // Update Inventory Stock Count per SKU
-router.put('/inventory/:variantId', authenticateToken, requireAdmin, (req: AuthRequest, res: Response) => {
+router.put('/inventory/:variantId', authenticateToken, requireAdmin, async (req: AuthRequest, res: Response) => {
   try {
     const { variantId } = req.params;
     const { stock } = req.body;
+    const targetStock = Math.max(0, Number(stock));
 
-    const idx = (db.data?.product_variants || []).findIndex(v => v.id === variantId);
-    if (idx === -1) {
-      return res.status(404).json({ success: false, message: 'Variant not found' });
+    if (isSupabaseConfigured()) {
+      try {
+        await updateVariantStockInSupabase(variantId, targetStock);
+      } catch (sbErr) {
+        console.warn('[Supabase Inventory Update Error, fallback to local DB]:', sbErr);
+      }
     }
 
-    db.data.product_variants[idx].stock = Math.max(0, Number(stock));
-    db.save();
+    const idx = (db.data?.product_variants || []).findIndex(v => v.id === variantId);
+    if (idx !== -1) {
+      db.data.product_variants[idx].stock = targetStock;
+      db.save();
+    }
 
-    res.json({ success: true, message: 'Stock updated successfully', variant: db.data.product_variants[idx] });
+    res.json({ success: true, message: 'Stock updated successfully', stock: targetStock });
   } catch (err: any) {
     res.status(500).json({ success: false, message: err.message || 'Failed to update stock' });
   }

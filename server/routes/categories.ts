@@ -1,19 +1,34 @@
 import { Router, Response } from 'express';
 import { db } from '../db.js';
+import { isSupabaseConfigured, fetchCategoriesFromSupabase } from '../services/supabaseService.js';
 import { authenticateToken, requireAdmin, AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
 
-router.get('/', (req: AuthRequest, res: Response) => {
+router.get('/', async (req: AuthRequest, res: Response) => {
   try {
     const { gender } = req.query;
+
+    if (isSupabaseConfigured()) {
+      try {
+        let sbCats = await fetchCategoriesFromSupabase();
+        if (sbCats && sbCats.length > 0) {
+          if (gender) {
+            sbCats = sbCats.filter((c: any) => c.gender.toUpperCase() === (gender as string).toUpperCase() || c.gender === 'UNISEX');
+          }
+          return res.json({ success: true, categories: sbCats });
+        }
+      } catch (sbErr) {
+        console.warn('[Supabase Categories Fetch Error, fallback to local DB]:', sbErr);
+      }
+    }
+
     let categories = (db.data?.categories || []).filter(c => c.status === 'ACTIVE');
 
     if (gender) {
       categories = categories.filter(c => c.gender.toUpperCase() === (gender as string).toUpperCase() || c.gender === 'UNISEX');
     }
 
-    // Attach product counts
     const result = categories.map(cat => {
       const productCount = (db.data?.products || []).filter(p => p.category_id === cat.id && p.status === 'ACTIVE').length;
       return { ...cat, product_count: productCount };

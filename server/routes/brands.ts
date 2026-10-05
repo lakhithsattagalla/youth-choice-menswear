@@ -1,11 +1,23 @@
 import { Router, Response } from 'express';
 import { db } from '../db.js';
+import { isSupabaseConfigured, fetchBrandsFromSupabase, getSupabaseClient } from '../services/supabaseService.js';
 import { authenticateToken, requireAdmin, AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
 
-router.get('/', (req: AuthRequest, res: Response) => {
+router.get('/', async (req: AuthRequest, res: Response) => {
   try {
+    if (isSupabaseConfigured()) {
+      try {
+        const sbBrands = await fetchBrandsFromSupabase();
+        if (sbBrands && sbBrands.length > 0) {
+          return res.json({ success: true, brands: sbBrands });
+        }
+      } catch (sbErr) {
+        console.warn('[Supabase Brands Fetch Error, fallback to local DB]:', sbErr);
+      }
+    }
+
     const brands = (db.data?.brands || []).filter(b => b.status === 'ACTIVE').map(b => {
       const productCount = (db.data?.products || []).filter(p => p.brand_id === b.id && p.status === 'ACTIVE').length;
       return { ...b, product_count: productCount };

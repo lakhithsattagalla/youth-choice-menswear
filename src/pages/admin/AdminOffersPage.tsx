@@ -24,6 +24,7 @@ export const AdminOffersPage: React.FC = () => {
   const [endDate, setEndDate] = useState<string>('');
   const [endTime, setEndTime] = useState<string>('');
   const [formError, setFormError] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Selected Products & Custom Discount Matrix State
   const [productSearch, setProductSearch] = useState('');
@@ -175,7 +176,7 @@ export const AdminOffersPage: React.FC = () => {
     setFormError('');
 
     if (!name.trim()) {
-      setFormError('Offer name is required.');
+      setFormError('Offer campaign name is required.');
       return;
     }
 
@@ -206,6 +207,7 @@ export const AdminOffersPage: React.FC = () => {
     }
 
     try {
+      setIsSubmitting(true);
       const payload = {
         name: name.trim(),
         title: title.trim() || name.trim(),
@@ -234,7 +236,10 @@ export const AdminOffersPage: React.FC = () => {
       setShowModal(false);
       await fetchOffers();
     } catch (err: any) {
-      setFormError(err.message || 'Failed to save offer');
+      console.error('Save Offer Error:', err);
+      setFormError(err.message || 'Failed to save offer. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -644,20 +649,37 @@ export const AdminOffersPage: React.FC = () => {
                 </div>
               </div>
 
+              {/* Form Error Notice at Footer */}
+              {formError && (
+                <div className="bg-rose-500/10 border border-rose-500/40 text-rose-300 p-3.5 rounded-xl text-xs flex items-center space-x-2.5">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{formError}</span>
+                </div>
+              )}
+
               {/* Action Buttons */}
               <div className="flex justify-end space-x-3 pt-4 border-t border-neutral-800">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-5 py-3 bg-neutral-800 hover:bg-neutral-700 text-slate-300 font-bold rounded-xl transition-colors"
+                  disabled={isSubmitting}
+                  className="px-5 py-3 bg-neutral-800 hover:bg-neutral-700 disabled:opacity-50 text-slate-300 font-bold rounded-xl transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-7 py-3 bg-amber-500 hover:bg-amber-400 text-black font-extrabold rounded-xl shadow-lg shadow-amber-500/20 transition-all uppercase tracking-wider"
+                  disabled={isSubmitting}
+                  className="px-7 py-3 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black font-extrabold rounded-xl shadow-lg shadow-amber-500/20 transition-all uppercase tracking-wider flex items-center justify-center space-x-2 min-w-[180px]"
                 >
-                  Save Product Offer
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                      <span>SAVING OFFER...</span>
+                    </>
+                  ) : (
+                    <span>SAVE PRODUCT OFFER</span>
+                  )}
                 </button>
               </div>
             </form>

@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { db } from '../db.js';
-import { calculateCouponStatus } from '../services/couponHelper.js';
+import { calculateCouponStatus, calculateOfferStatus } from '../services/couponHelper.js';
 import { authenticateToken, requireAdmin, AuthRequest } from '../middleware/auth.js';
 import { checkAccountLockout, recordFailedLogin, clearFailedLogin, logSecurityEvent } from '../services/security.js';
 

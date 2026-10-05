@@ -639,29 +639,30 @@ router.get('/analytics', authenticateToken, requireAdmin, (req: AuthRequest, res
   try {
     const events = db.data?.analytics_events || [];
     const orders = db.data?.orders || [];
+    const users = db.data?.users || [];
 
-    const totalVisitors = 1450;
-    const productViews = events.filter(e => e.event_type === 'PRODUCT_VIEW').length + 820;
-    const addToCartCount = events.filter(e => e.event_type === 'ADD_TO_CART').length + 340;
-    const checkoutCount = events.filter(e => e.event_type === 'CHECKOUT_STARTED').length + 190;
+    const totalVisitors = Math.max(users.length, events.length, 1);
+    const productViews = events.filter(e => e.event_type === 'PRODUCT_VIEW').length;
+    const addToCartCount = events.filter(e => e.event_type === 'ADD_TO_CART').length;
+    const checkoutCount = events.filter(e => e.event_type === 'CHECKOUT_STARTED').length;
     const whatsappOrders = events.filter(e => e.event_type === 'WHATSAPP_ORDER').length + orders.length;
     const confirmedOrders = orders.filter(o => o.status !== 'CANCELLED').length;
 
     const funnel = [
       { stage: 'Visitors', count: totalVisitors, percentage: 100 },
-      { stage: 'Product Views', count: productViews, percentage: Math.round((productViews / totalVisitors) * 100) },
-      { stage: 'Add to Cart', count: addToCartCount, percentage: Math.round((addToCartCount / totalVisitors) * 100) },
-      { stage: 'Checkout Started', count: checkoutCount, percentage: Math.round((checkoutCount / totalVisitors) * 100) },
-      { stage: 'WhatsApp Orders', count: whatsappOrders, percentage: Math.round((whatsappOrders / totalVisitors) * 100) },
-      { stage: 'Confirmed Orders', count: confirmedOrders, percentage: Math.round((confirmedOrders / totalVisitors) * 100) }
+      { stage: 'Product Views', count: productViews, percentage: totalVisitors ? Math.round((productViews / totalVisitors) * 100) : 0 },
+      { stage: 'Add to Cart', count: addToCartCount, percentage: totalVisitors ? Math.round((addToCartCount / totalVisitors) * 100) : 0 },
+      { stage: 'Checkout Started', count: checkoutCount, percentage: totalVisitors ? Math.round((checkoutCount / totalVisitors) * 100) : 0 },
+      { stage: 'WhatsApp Orders', count: whatsappOrders, percentage: totalVisitors ? Math.round((whatsappOrders / totalVisitors) * 100) : 0 },
+      { stage: 'Confirmed Orders', count: confirmedOrders, percentage: totalVisitors ? Math.round((confirmedOrders / totalVisitors) * 100) : 0 }
     ];
 
-    // Most Engagement Products
+    // Real Product Engagement based on recorded events
     const productEngagement = (db.data?.products || []).slice(0, 5).map(p => {
       const pEvents = events.filter(e => e.product_id === p.id);
-      const views = pEvents.filter(e => e.event_type === 'PRODUCT_VIEW').length + 150;
-      const wishlists = pEvents.filter(e => e.event_type === 'WISHLIST_ADD').length + 35;
-      const carts = pEvents.filter(e => e.event_type === 'ADD_TO_CART').length + 22;
+      const views = pEvents.filter(e => e.event_type === 'PRODUCT_VIEW').length;
+      const wishlists = pEvents.filter(e => e.event_type === 'WISHLIST_ADD').length;
+      const carts = pEvents.filter(e => e.event_type === 'ADD_TO_CART').length;
 
       const brand = (db.data?.brands || []).find(b => b.id === p.brand_id);
 
@@ -675,16 +676,26 @@ router.get('/analytics', authenticateToken, requireAdmin, (req: AuthRequest, res
       };
     });
 
-    // Daily Revenue (last 7 days demo)
-    const revenueChart = [
-      { day: 'Mon', revenue: 14500, orders: 8 },
-      { day: 'Tue', revenue: 22100, orders: 12 },
-      { day: 'Wed', revenue: 18400, orders: 9 },
-      { day: 'Thu', revenue: 29500, orders: 15 },
-      { day: 'Fri', revenue: 35000, orders: 19 },
-      { day: 'Sat', revenue: 48200, orders: 24 },
-      { day: 'Sun', revenue: 41800, orders: 21 }
-    ];
+    // Dynamic revenue grouped by day from actual orders
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const revenueMap: Record<string, { revenue: number; orders: number }> = {};
+    days.forEach(d => { revenueMap[d] = { revenue: 0, orders: 0 }; });
+
+    orders.forEach(o => {
+      if (o.status !== 'CANCELLED' && o.created_at) {
+        const dayName = days[new Date(o.created_at).getDay()];
+        if (revenueMap[dayName]) {
+          revenueMap[dayName].revenue += Number(o.grand_total || 0);
+          revenueMap[dayName].orders += 1;
+        }
+      }
+    });
+
+    const revenueChart = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => ({
+      day,
+      revenue: revenueMap[day]?.revenue || 0,
+      orders: revenueMap[day]?.orders || 0
+    }));
 
     res.json({
       success: true,
